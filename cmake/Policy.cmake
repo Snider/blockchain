@@ -1,0 +1,15 @@
+message("Setting Cmake Policies")
+
+if(POLICY CMP0043)
+    cmake_policy(SET CMP0043 NEW)
+endif()
+if(POLICY CMP0043)
+    cmake_policy(SET CMP0074 NEW)
+endif()
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)
+endif()
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+

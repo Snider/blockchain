@@ -8,21 +8,9 @@ message("OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY}")
 message("OPENSSL_SSL_LIBRARY: ${OPENSSL_SSL_LIBRARY}")    
 
 list(INSERT CMAKE_MODULE_PATH 0
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+        "${CMAKE_SOURCE_DIR}/cmake")
 
-
-if(POLICY CMP0043)
-  cmake_policy(SET CMP0043 NEW)
-endif()
-if(POLICY CMP0043)
-  cmake_policy(SET CMP0074 NEW)
-endif()
-if(POLICY CMP0144)
-  cmake_policy(SET CMP0144 NEW)
-endif()
-if(POLICY CMP0167)
-  cmake_policy(SET CMP0167 OLD)
-endif()
+include(Policy)
 
 option (USE_CCACHE "Use ccache if a usable instance is found" ON)
 if (USE_CCACHE)
@@ -33,7 +21,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(ZANO_BOOST_MIN_VER 1.75)
+set(ZANO_BOOST_MIN_VER 1.84)
 
 
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
@@ -55,18 +43,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # build types
 if (UNIX AND NOT APPLE)
-  # single configurations, defaults to Release
-  if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
+  if (NOT CMAKE_BUILD_TYPE) # single configurations, defaults to Release
     set(CMAKE_BUILD_TYPE "Release")
-  endif()
-else()
-  # multi configurations for MSVC and XCode
-  if(CMAKE_SYSTEM_NAME STREQUAL "iOS") 
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
-  elseif(CMAKE_SYSTEM_NAME STREQUAL "Android") 
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
-  else()
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
   endif()
 endif()
 message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}, and built type: ${CMAKE_BUILD_TYPE}")
@@ -87,9 +66,11 @@ set(TESTNET FALSE CACHE BOOL "Compile for testnet")
 set(BUILD_GUI FALSE CACHE BOOL "Build qt-daemon")
 set(USE_BITCOIN_SECP256K1_FOR_ECDSA FALSE CACHE BOOL "Use bitcoin-secp256k1 library for validating ECDSA(instead of OpenSSL)")
 if(NOT USE_BITCOIN_SECP256K1_FOR_ECDSA)
-  add_definitions(-DUSE_OPEN_SSL_FOR_ECDSA)   
+  add_definitions(-DUSE_OPEN_SSL_FOR_ECDSA)
 endif()
 
+# Add an option to control building of bundled Boost
+option(BUILD_BUNDLED_BOOST "Build a bundled version of Boost from source" OFF)
 
 include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
@@ -105,9 +86,6 @@ if(CAKEWALLET)
   add_definitions(-DCAKEWALLET)  
   add_definitions(-DDISABLE_PFR_SERIALIZATION_SELFCHECK)  
 endif()
-
-set(OPENSSL_USE_STATIC_LIBS TRUE) # link statically
-find_package(OpenSSL REQUIRED)
 
 if(DISABLE_TOR)
   message("NOTICE: Building with disabled TOR support!")  
@@ -189,7 +167,7 @@ else()
     set(STATIC_ASSERT_FLAG "-Dstatic_assert=_Static_assert")
   endif()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -D_GNU_SOURCE ${MINGW_FLAG} ${STATIC_ASSERT_FLAG} ${WARNINGS} ${C_WARNINGS} ${ARCH_FLAG}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -ftemplate-depth-1024 -std=c++14 -D_GNU_SOURCE ${APPLE_FLAG} ${MINGW_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_FLAG}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -ftemplate-depth-1024 -D_GNU_SOURCE ${APPLE_FLAG} ${MINGW_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_FLAG}")
   if (NOT APPLE AND NOT MSVC)
     if (CLANG)
       set(LLVM_USE_LINKER "gold")
@@ -240,53 +218,85 @@ if(STATIC)
 endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")    
-if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 12.00)
-  if(NOT DEFINED SKIP_BOOST_FATLIB_LIB OR NOT SKIP_BOOST_FATLIB_LIB)
-	message("Ios: libboost.a included as library")    
-	set(Boost_LIBRARIES "libboost.a")
-  else()
-	message("Ios: libboost.a not included as library")    
-  endif()
-  #workaround for new XCode 12 policy for builds(now it includes a slice for the "arm64" when builds for simulator)
-  set(__iphoneos_archs "arm64")
-  #set(__iphonesimulator_archs "arm64,x86_64")
-  set(CMAKE_XCODE_ATTRIBUTE_ARCHS[sdk=iphoneos*] "${__iphoneos_archs}")
-  set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS[sdk=iphoneos*] "${__iphoneos_archs}")
-  #set(CMAKE_XCODE_ATTRIBUTE_ARCHS[sdk=iphonesimulator*] "${__iphonesimulator_archs}")
-  #set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS[sdk=iphonesimulator*] "${__iphonesimulator_archs}")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
-  if(CAKEWALLET)
-    find_package(Boost ${ZANO_BOOST_MIN_VER} REQUIRED COMPONENTS system filesystem locale thread timer date_time chrono regex serialization atomic program_options)
-  else()
-    set(Boost_LIBRARY_DIRS "${Boost_LIBRARY_DIRS}/${CMAKE_ANDROID_ARCH_ABI}/")
-    set(Boost_LIBRARIES "${Boost_LIBRARY_DIRS}libboost_system.a;${Boost_LIBRARY_DIRS}libboost_filesystem.a;${Boost_LIBRARY_DIRS}libboost_thread.a;${Boost_LIBRARY_DIRS}libboost_timer.a;${Boost_LIBRARY_DIRS}libboost_date_time.a;${Boost_LIBRARY_DIRS}libboost_chrono.a;${Boost_LIBRARY_DIRS}libboost_regex.a;${Boost_LIBRARY_DIRS}libboost_serialization.a;${Boost_LIBRARY_DIRS}libboost_atomic.a;${Boost_LIBRARY_DIRS}libboost_program_options.a")
-  endif()  
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC")
-elseif(APPLE)
-  find_package(Boost ${ZANO_BOOST_MIN_VER} REQUIRED COMPONENTS system filesystem locale thread timer date_time chrono regex serialization atomic program_options)
+
+# --- Find or Build Boost ---
+
+# Define a stable location for the bundled Boost SDK to allow for CI caching.
+# The path is made specific to the compiler and architecture, matching your request for a path like `build/sdk/ggc-x64/boost`.
+string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID_LOWER)
+if(COMPILER_ID_LOWER STREQUAL "gnu")
+    set(COMPILER_ID_LOWER "gcc")
+endif()
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+    set(PROCESSOR "x64")
 else()
-  find_package(Boost ${ZANO_BOOST_MIN_VER} REQUIRED COMPONENTS system filesystem locale thread timer date_time chrono regex serialization atomic program_options log)
+    set(PROCESSOR ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+# This path is relative to the source root, e.g., /path/to/project/build/sdk/gcc-x64/boost
+set(BUNDLED_BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${COMPILER_ID_LOWER}-${PROCESSOR}/boost)
+message(STATUS "Bundled Boost SDK path set to: ${BUNDLED_BOOST_INSTALL_PREFIX}")
+
+set(ZANO_BOOST_COMPONENTS system filesystem thread timer date_time chrono regex serialization atomic program_options)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
+  list(APPEND ZANO_BOOST_COMPONENTS locale)
+endif()
+if(NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
+  list(APPEND ZANO_BOOST_COMPONENTS log)
 endif()
 
+# 1. First, try to find Boost. We hint at our custom SDK location to find a previously built version.
+if(NOT BUILD_BUNDLED_BOOST)
+  # Only hint at the custom SDK location if it actually exists, otherwise find_package will error.
+  if(EXISTS "${BUNDLED_BOOST_INSTALL_PREFIX}/include/boost/version.hpp")
+    set(Boost_ROOT ${BUNDLED_BOOST_INSTALL_PREFIX})
+  endif()
+  find_package(Boost ${ZANO_BOOST_MIN_VER} QUIET COMPONENTS ${ZANO_BOOST_COMPONENTS}) # This will now search system paths if the bundled one isn't ready.
+endif()
+
+# 2. If Boost was not found (or a bundled build was requested), build it.
+if(NOT Boost_FOUND)
+  message(STATUS "Boost not found or BUILD_BUNDLED_BOOST=ON. Building a bundled version.")
+  set(BUILD_BUNDLED_BOOST ON CACHE BOOL "Build a bundled version of Boost from source" FORCE)
+  
+  set(BOOST_INSTALL_PREFIX ${BUNDLED_BOOST_INSTALL_PREFIX})
+  # Include the script that defines the 'boost_external' target
+  # Use BoostB2 for version 1.84.0 (b2 build system).
+  # To use the CMake-based build for 1.85.0+, change this to include(BoostCmake).
+  include(BoostCmake)
+
+  # Manually set the variables that find_package(Boost) would have set.
+  # This makes the rest of the CMake script work as if Boost was "found".
+  set(Boost_FOUND TRUE)
+  set(Boost_INCLUDE_DIRS ${BOOST_INSTALL_PREFIX}/include)
+  set(Boost_LIBRARY_DIRS ${BOOST_INSTALL_PREFIX}/lib)
+  set(Boost_VERSION ${BOOST_VERSION}) # From Boost.cmake
+
+  # For non-MSVC compilers, we need to construct the list of library files manually.
+  # MSVC can use auto-linking if we don't define Boost_LIBRARIES.
+  if(NOT MSVC)
+    set(Boost_LIBRARIES "")
+    foreach(COMPONENT ${ZANO_BOOST_COMPONENTS})
+      # Append just the library name (e.g., "boost_system"). The linker will find the full file
+      # (e.g., libboost_system.a) by searching the directories provided by Boost_LIBRARY_DIRS.
+      # This avoids hard-coding a path that doesn't exist at configure-time.
+      list(APPEND Boost_LIBRARIES "boost_${COMPONENT}")
+    endforeach()
+  endif()
+endif()
 
 
 message(STATUS "Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
 
-
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
+include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
+# Link additional system libraries required by Boost components or the application
 if(MINGW)
   set(Boost_LIBRARIES "${Boost_LIBRARIES};ws2_32;mswsock")
-elseif(NOT MSVC)
-  if(NOT APPLE AND NOT CAKEWALLET)
-    set(Boost_LIBRARIES "${Boost_LIBRARIES};")
-    if(STATIC) 
-      message("NOTICE: Including static ICU libraries")  
-      set(Boost_LIBRARIES "${Boost_LIBRARIES};icui18n.a;icuuc.a;icudata.a;dl")
-    endif()
-  endif()
+elseif(NOT MSVC AND NOT APPLE AND NOT CAKEWALLET AND STATIC)
+  # For static builds on Linux, Boost.Locale requires ICU, and other parts may need `dl`.
+  message("NOTICE: Statically linking ICU and dl for Boost")
+  set(Boost_LIBRARIES "${Boost_LIBRARIES};icui18n;icuuc;icudata;dl")
 endif()
+
 
 if(BUILD_GUI)
   find_package(Qt6 REQUIRED COMPONENTS Core5Compat Widgets WebEngineWidgets WebChannel PrintSupport)
@@ -325,7 +335,6 @@ if(NOT DISABLE_MDBX)
    add_definitions(-DENABLED_ENGINE_MDBX)
 endif()
 
-  
 add_subdirectory(contrib)
 add_subdirectory(src)
 
