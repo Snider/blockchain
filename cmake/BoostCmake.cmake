@@ -23,7 +23,7 @@ set(BOOST_BUILD_DIR ${CMAKE_BINARY_DIR}/boost_bld)
 # --- Boost CMake Build Arguments ---
 set(BOOST_CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBOOST_INCLUDE_LIBRARIES=${BOOST_LIBS_TO_BUILD}
+    -DBOOST_INCLUDED_LIBRARIES=${BOOST_LIBS_TO_BUILD}
     -DBUILD_TESTING=OFF
     -DBOOST_BUILD_TESTS=OFF
     -DBOOST_BUILD_EXAMPLES=OFF
@@ -33,6 +33,17 @@ set(BOOST_CMAKE_ARGS
 # Pass build type for single-configuration generators (e.g., Makefiles)
 if(CMAKE_BUILD_TYPE)
     list(APPEND BOOST_CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+endif()
+
+# Forward macOS-specific settings for correct architecture and SDK.
+# This is crucial for cross-compiling or building on Apple Silicon.
+if(APPLE)
+    if(DEFINED CMAKE_OSX_ARCHITECTURES)
+        list(APPEND BOOST_CMAKE_ARGS -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES})
+    endif()
+    if(DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+        list(APPEND BOOST_CMAKE_ARGS -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET})
+    endif()
 endif()
 
 # For static linking on Windows, ensure static runtime is used.
