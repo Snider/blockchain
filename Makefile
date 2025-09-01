@@ -98,7 +98,7 @@ build: build_sdk ## Build the project using the existing configuration.
 build_sdk: ## Build bundled dependencies like Boost if required.
 	@echo "--- Building SDK dependencies ---"
 	@# First, ensure the project is configured so the build_sdk target exists.
-	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [  -f "$(BUILD_DIR)/Makefile" ]; then \
+	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [ ! -f "$(BUILD_DIR)/Makefile" ]; then \
 		echo "Project not configured in $(BUILD_DIR). Running 'make configure' first..."; \
 		$(MAKE) configure; \
 	fi
