@@ -90,17 +90,9 @@ configure: ## Configure the project with the specified options.
 	@cmake -S . -B $(BUILD_DIR) $(CMAKE_FLAGS)
 
 # Build the project using the existing configuration.
-build: configure ## Build all default targets for the current configuration.
-	@echo "--- Building all targets in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) -- -j$(NPROC)
-
-build-cli: configure ## Build only the command-line interface tools.
-	@echo "--- Building SDK and CLI tools in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) --target build_sdk daemon simplewallet connectivity_tool -- -j$(NPROC)
-
-build-gui: configure ## Build only the GUI application.
-	@echo "--- Building SDK and GUI in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) --target build_sdk Zano -- -j$(NPROC)
+build: configure ## Build the specified targets or all default targets.
+	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs (Targets: $(or $(TARGETS),all)) ---"
+	@cmake --build $(BUILD_DIR) --target $(or $(TARGETS),all) -- -j$(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
 build_sdk: configure ## Build bundled dependencies like Boost if required.
