@@ -290,16 +290,18 @@ if(NOT LOCALE_INDEX EQUAL -1)
     endif()
 
     ExternalProject_Add(icu_external
-        GIT_REPOSITORY      https://github.com/unicode-org/icu
-        GIT_TAG             e2d85306162d3a0691b070b4f0a73e4012433444 # Pinned commit from release-64-2
-        SOURCE_SUBDIR       icu4c/source
+        URL                 https://github.com/unicode-org/icu/releases/download/release-64-2/icu4c-64_2-src.tgz
+        URL_HASH            SHA256=627d5d8478e6d96fc8c90fed4851239079a561a6a8b9e48b0892f24e82d31d6c
+        # The tarball contains a single 'icu' directory, which CMake strips. The content is 'source'.
+        SOURCE_SUBDIR       source
         INSTALL_DIR         ${ICU_INSTALL_PREFIX}
         PREFIX              ${BOOST_WORK_DIR}/icu # Use the same work dir structure as boost
         EXCLUDE_FROM_ALL    1
 
-        # ICU uses autotools. We run its configure script with the correct environment.
+        # ICU uses autotools. We invoke the script with 'sh' to bypass potential
+        # filesystem permission issues on platforms like WSL.
         CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
-                            <SOURCE_DIR>/runConfigureICU ${ICU_PLATFORM} --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
+                            sh <SOURCE_DIR>/source/runConfigureICU ${ICU_PLATFORM} --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
         BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
         INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
     )
