@@ -44,16 +44,6 @@ jobs:
           path: ${{ github.workspace }}/build/ccache
           key: ccache-${{ inputs.chain-network }}-${{ runner.os }}
 
-      - name: Install boost
-        uses: MarkusJx/install-boost@6d8df42f57de83c5b326b5b83e7b35d650030103
-        id: install-boost
-        with:
-          boost_version: 1.84.0
-          boost_install_dir: ${{ github.workspace }}/build/boost_1_84_0
-          platform_version: 22.04
-          toolset: gcc
-          arch: x86
-
       - name: Install Qt
         if: ${{ inputs.build-gui }}
         uses: jurplel/install-qt-action@v3
@@ -73,8 +63,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          boost-root: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-          target: 'daemon simplewallet connectivity_tool'
+          target: 'build_sdk daemon simplewallet connectivity_tool'
           static: 'true'
           arch: 'x86-64'
 
@@ -99,8 +88,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          boost-root: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-          target: 'Zano'
+          target: 'build_sdk Zano'
           build-gui: 'true'
           static: 'true'
           arch: 'x86-64'
