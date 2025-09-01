@@ -13,6 +13,7 @@ endif()
 
 # --- Pre-compiled Cache Configuration ---
 option(FORCE_BUILD_BOOST "Force building Boost from source, ignoring pre-compiled caches." OFF)
+option(REQUIRE_PRECOMPILED_BOOST "Fail the build if a pre-compiled Boost cache cannot be downloaded and used." OFF)
 set(PRECOMPILED_CACHE_URL "https://github.com/letheanVPN/blockchain/releases/download/prebuilt-deps" CACHE STRING "Base URL for pre-compiled dependency packages")
 
 # --- Platform and SDK Path Calculation ---
@@ -181,18 +182,37 @@ if(NOT FORCE_BUILD_BOOST)
         set(EXPECTED_CACHE_HASH ${BOOST_VERSION_${BOOST_VERSION_SUFFIX}_CACHE_SHA256_${PLATFORM_ID_SUFFIX}})
 
         if(NOT EXPECTED_CACHE_HASH)
-            message(STATUS "Skipping pre-compiled cache for Boost ${BOOST_VERSION} on ${PLATFORM_ID}: no hash defined.")
+            if(REQUIRE_PRECOMPILED_BOOST)
+                message(FATAL_ERROR "Required pre-compiled Boost, but no cache hash is defined for Boost ${BOOST_VERSION} on platform ${PLATFORM_ID}.")
+            else()
+                message(STATUS "Skipping pre-compiled cache for Boost ${BOOST_VERSION} on ${PLATFORM_ID}: no hash defined.")
+            endif()
         else()
             set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work)
             file(MAKE_DIRECTORY ${BOOST_WORK_DIR})
             set(BOOST_CACHE_FILE "${BOOST_WORK_DIR}/${BOOST_CACHE_FILENAME}")
-
+ 
             message(STATUS "Attempting to download pre-compiled Boost for ${PLATFORM_ID} from ${BOOST_CACHE_URL}")
-            file(DOWNLOAD ${BOOST_CACHE_URL} ${BOOST_CACHE_FILE}
-                 EXPECTED_HASH SHA256=${EXPECTED_CACHE_HASH}
-                 STATUS DOWNLOAD_STATUS SHOW_PROGRESS)
-            list(GET DOWNLOAD_STATUS 0 DOWNLOAD_RESULT)
+            # The standard file(DOWNLOAD) command issues a FATAL_ERROR on failure, which prevents
+            # a graceful fallback to a source build. We use execute_process with cmake -E download
+            # to capture the result without halting configuration.
+            execute_process(
+                COMMAND ${CMAKE_COMMAND} -E download "${BOOST_CACHE_URL}" "${BOOST_CACHE_FILE}"
+                RESULT_VARIABLE DOWNLOAD_RESULT
+                OUTPUT_QUIET
+                ERROR_VARIABLE DOWNLOAD_ERROR_MSG
+            )
 
+            if(DOWNLOAD_RESULT EQUAL 0)
+                # Download succeeded, now check the hash
+                file(SHA256 ${BOOST_CACHE_FILE} ACTUAL_CACHE_HASH)
+                if(NOT ACTUAL_CACHE_HASH STREQUAL EXPECTED_CACHE_HASH)
+                    set(DOWNLOAD_RESULT 1) # Treat as failure
+                    set(DOWNLOAD_ERROR_MSG "Hash mismatch for ${BOOST_CACHE_FILE}. Expected ${EXPECTED_CACHE_HASH}, got ${ACTUAL_CACHE_HASH}.")
+                    file(REMOVE ${BOOST_CACHE_FILE}) # Clean up bad download
+                endif()
+            endif()
+ 
             if(DOWNLOAD_RESULT EQUAL 0)
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E tar xzf ${BOOST_CACHE_FILE}
@@ -208,11 +228,18 @@ if(NOT FORCE_BUILD_BOOST)
                     endforeach()
                     return() # Success!
                 else()
-                    message(WARNING "Failed to extract pre-compiled Boost archive: ${BOOST_CACHE_FILE}. Error code: ${EXTRACT_RESULT}")
+                if(REQUIRE_PRECOMPILED_BOOST)
+                    message(FATAL_ERROR "Failed to extract required pre-compiled Boost archive: ${BOOST_CACHE_FILE}. Error code: ${EXTRACT_RESULT}")
+                else()
+                    message(WARNING "Failed to extract pre-compiled Boost archive: ${BOOST_CACHE_FILE}. Error code: ${EXTRACT_RESULT}. Falling back to source build.")
+                endif()
                 endif()
             else()
-                list(GET DOWNLOAD_STATUS 1 ERROR_MSG)
-                message(STATUS "Could not download pre-compiled Boost: ${ERROR_MSG}. Falling back to source build.")
+                if(REQUIRE_PRECOMPILED_BOOST)
+                    message(FATAL_ERROR "Could not download required pre-compiled Boost: ${DOWNLOAD_ERROR_MSG}")
+                else()
+                    message(STATUS "Could not download pre-compiled Boost: ${DOWNLOAD_ERROR_MSG}. Falling back to source build.")
+                endif()
             endif()
         endif()
     endif()
