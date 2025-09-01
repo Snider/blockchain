@@ -3,7 +3,7 @@
   <component name="CMakeSharedSettings">
     <configurations>
       <configuration PROFILE_NAME="Debug-Mac Lan" ENABLED="false" GENERATION_DIR="build/Debug/mac/ninja" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Mac Lan" GENERATION_OPTIONS="-DTESTNET=TRUE -DSTATIC=FALSE -DBUILD_GUI=FALSE -DDISABLE_TOR=TRUE" BUILD_OPTIONS="-j1 --config Debug" NO_GENERATOR="true" />
-      <configuration PROFILE_NAME="Debug-WSL" ENABLED="false" GENERATION_DIR="build/Debug/Linux/gcc" CONFIG_NAME="Debug" TOOLCHAIN_NAME="WSL" GENERATION_OPTIONS="-DTESTNET=TRUE -DSTATIC=TRUE -DBUILD_GUI=FALSE -DDISABLE_TOR=TRUE" BUILD_OPTIONS="-j10 --config Debug" />
+      <configuration PROFILE_NAME="Debug-WSL" ENABLED="true" GENERATION_DIR="build/Debug/Linux/gcc" CONFIG_NAME="Debug" TOOLCHAIN_NAME="WSL" GENERATION_OPTIONS="-DTESTNET=TRUE -DSTATIC=TRUE -DBUILD_GUI=FALSE -DDISABLE_TOR=TRUE" BUILD_OPTIONS="-j10 --config Debug" />
       <configuration PROFILE_NAME="Debug-Visual Studio" ENABLED="false" GENERATION_DIR="build/Debug/Windows/msvc" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Visual Studio" GENERATION_OPTIONS="-G &quot;Visual Studio 17 2022&quot; -DTESTNET=TRUE -DSTATIC=FALSE -DBUILD_GUI=TRUE -DDISABLE_TOR=1 -DCMAKE_PREFIX_PATH=&quot;D:\_sdk\qt\6.8.3\msvc2022_64&quot;" BUILD_OPTIONS="-j10 --config Debug">
         <ADDITIONAL_GENERATION_ENVIRONMENT>
           <envs>

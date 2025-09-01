@@ -3,6 +3,7 @@
 
 # User-specific stuff
 .idea/**/workspace.xml
+.idea/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
@@ -82,3 +83,4 @@ http-client.private.env.json
 # Apifox Helper cache
 .idea/.cache/.Apifox_Helper
 .idea/ApifoxUploaderProjectSetting.xml
+/other.xml

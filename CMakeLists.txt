@@ -78,7 +78,7 @@ endif()
 # Add an option to control building of bundled Boost
 option(BUILD_BUNDLED_BOOST "Build a bundled version of Boost from source" OFF)
 
-include_directories(src contrib/eos_portable_archive contrib contrib/epee/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
+include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
 add_definitions(-DSTATICLIB)
 
