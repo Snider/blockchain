@@ -37,11 +37,6 @@ jobs:
 
       - name: install dependencies
         run: sudo apt-get install -y autotools-dev libicu-dev libbz2-dev git screen checkinstall zlib1g-dev ccache miniupnpc build-essential g++ curl cmake libssl-dev bzip2
-      - name: ccache caching
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/build/ccache
-          key: ccache-${{ inputs.chain-network }}-${{ runner.os }}
 
       - name: Install Qt
         if: ${{ inputs.build-gui }}
@@ -60,7 +55,9 @@ jobs:
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        run: make build BUILD_TYPE=Release STATIC_BUILD=ON TARGETS="daemon simplewallet connectivity_tool"
+        run: |
+          make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
+          make build BUILD_TYPE=Release STATIC_BUILD=ON TARGETS="daemon simplewallet connectivity_tool"
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
