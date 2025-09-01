@@ -107,8 +107,8 @@ clean: ## DANGEROUS: Deletes the entire build directory, including cached SDKs.
 # Clean build artifacts but preserve the SDK cache.
 clean-dev: ## Clean build artifacts but preserve the cached SDK.
 	@echo "--- Cleaning build artifacts, preserving SDK in $(BUILD_ROOT)/$(SDK_DIR_NAME) ---"
-	@mkdir -p $(BUILD_ROOT)
-	@find $(BUILD_ROOT) -mindepth 1 -maxdepth 1 -not -name "$(SDK_DIR_NAME)" -exec rm -rf {} +
+	@cmake -E make_directory $(BUILD_ROOT)
+	@cmake -D CLEAN_DIR=$(BUILD_ROOT) -D PRESERVE_NAME=$(SDK_DIR_NAME) -P cmake/clean_except.cmake
 	@echo "Clean complete."
 
 # --- Compatibility Targets (for old workflow) ---
