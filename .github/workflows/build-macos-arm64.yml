@@ -82,13 +82,8 @@ jobs:
           arch: 'clang_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-      - name: Build SDK
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '3'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk'
+      - name: Build SDK via Makefile
+        run: make build_sdk BUILD_TYPE=Release
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}

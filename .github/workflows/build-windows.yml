@@ -37,7 +37,7 @@ jobs:
 
       - name: Eat the Choco
         run: |
-          choco install ccache -y
+          choco install ccache make -y
           choco install zip -y
 
       - name: ccache caching
@@ -58,16 +58,8 @@ jobs:
           arch: 'win64_msvc2022_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-      - name: Build SDK
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk'
-          static: 'false'
-          generator: 'Visual Studio 17 2022'
-          arch: 'x86-64'
+      - name: Build SDK via Makefile
+        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=OFF
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}

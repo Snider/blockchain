@@ -75,13 +75,8 @@ jobs:
           make -j3 && make install_sw install_ssldirs && cd ..
           rm -rf openssl-1.1.1w/
 
-      - name: Build SDK
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk'
+      - name: Build SDK via Makefile
+        run: make build_sdk BUILD_TYPE=Release
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
