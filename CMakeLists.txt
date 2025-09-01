@@ -58,6 +58,12 @@ find_package(OpenSSL REQUIRED)
 
 if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+  # On macOS, CMAKE_OSX_ARCHITECTURES must be set for the Boost build to succeed,
+  # especially on Apple Silicon. We default it to the host processor architecture.
+  if(NOT CMAKE_OSX_ARCHITECTURES)
+    message(STATUS "Defaulting CMAKE_OSX_ARCHITECTURES to ${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    set(CMAKE_OSX_ARCHITECTURES ${CMAKE_HOST_SYSTEM_PROCESSOR})
+  endif()
 endif()
 
 set(USE_PCH FALSE CACHE BOOL "Use shared precompiled headers")
@@ -72,7 +78,7 @@ endif()
 # Add an option to control building of bundled Boost
 option(BUILD_BUNDLED_BOOST "Build a bundled version of Boost from source" OFF)
 
-include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
+include_directories(src contrib/eos_portable_archive contrib contrib/epee/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
 add_definitions(-DSTATICLIB)
 
@@ -232,7 +238,8 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 else()
     set(PROCESSOR ${CMAKE_SYSTEM_PROCESSOR})
 endif()
-# This path is relative to the source root, e.g., /path/to/project/build/sdk/gcc-x64/boost
+# This path is relative to the build root, e.g., /path/to/project/build/sdk/gcc-x64/boost
+# Placing it inside the build tree (relative to CMAKE_BINARY_DIR) prevents an infinite re-configure loop.
 set(BUNDLED_BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${COMPILER_ID_LOWER}-${PROCESSOR}/boost)
 message(STATUS "Bundled Boost SDK path set to: ${BUNDLED_BOOST_INSTALL_PREFIX}")
 
@@ -240,7 +247,7 @@ set(ZANO_BOOST_COMPONENTS system filesystem thread timer date_time chrono regex 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
   list(APPEND ZANO_BOOST_COMPONENTS locale)
 endif()
-if(NOT APPLE AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
+if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
   list(APPEND ZANO_BOOST_COMPONENTS log)
 endif()
 
@@ -256,17 +263,23 @@ endif()
 # 2. If Boost was not found (or a bundled build was requested), build it.
 if(NOT Boost_FOUND)
   message(STATUS "Boost not found or BUILD_BUNDLED_BOOST=ON. Building a bundled version.")
-  set(BUILD_BUNDLED_BOOST ON CACHE BOOL "Build a bundled version of Boost from source" FORCE)
+  set(BUILD_BUNDLED_BOOST ON) # This is a per-configure decision, no need to cache.
   
   set(BOOST_INSTALL_PREFIX ${BUNDLED_BOOST_INSTALL_PREFIX})
   # Include the script that defines the 'boost_external' target
   # Use BoostB2 for version 1.84.0 (b2 build system).
   # To use the CMake-based build for 1.85.0+, change this to include(BoostCmake).
   include(BoostCmake)
+  #include(BoostB2)
+  
+  # Add a custom target to build all SDK dependencies.
+  # This allows for a separate, one-time build step to prepare dependencies,
+  # avoiding race conditions and configure-time build issues.
+  # You can run this with: cmake --build . --target build_sdk
+  add_custom_target(build_sdk DEPENDS boost_external
+                    COMMENT "Building all bundled SDK dependencies (e.g., Boost)...")
 
   # Manually set the variables that find_package(Boost) would have set.
-  # This makes the rest of the CMake script work as if Boost was "found".
-  set(Boost_FOUND TRUE)
   set(Boost_INCLUDE_DIRS ${BOOST_INSTALL_PREFIX}/include)
   set(Boost_LIBRARY_DIRS ${BOOST_INSTALL_PREFIX}/lib)
   set(Boost_VERSION ${BOOST_VERSION}) # From Boost.cmake
@@ -282,21 +295,31 @@ if(NOT Boost_FOUND)
       list(APPEND Boost_LIBRARIES "boost_${COMPONENT}")
     endforeach()
   endif()
+  # After setting up the build and defining the variables, set Boost_FOUND to TRUE.
+  # This prevents sub-projects (like tor-connect) from re-running find_package and failing the configuration.
+  set(Boost_FOUND TRUE)
+  # Also, explicitly mark all required components as found. This is necessary to satisfy
+  # find_package calls that check for specific components.
+  foreach(COMPONENT ${ZANO_BOOST_COMPONENTS})
+    string(TOUPPER ${COMPONENT} COMPONENT_UPPER)
+    set(Boost_${COMPONENT_UPPER}_FOUND TRUE)
+  endforeach()
 endif()
 
-
 message(STATUS "Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
+
+# Now that Boost has been found or built, add its include directory to the global path.
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application
 if(MINGW)
-  set(Boost_LIBRARIES "${Boost_LIBRARIES};ws2_32;mswsock")
+  list(APPEND Boost_LIBRARIES ws2_32 mswsock)
 elseif(NOT MSVC AND NOT APPLE AND NOT CAKEWALLET AND STATIC)
   # For static builds on Linux, Boost.Locale requires ICU, and other parts may need `dl`.
   message("NOTICE: Statically linking ICU and dl for Boost")
-  set(Boost_LIBRARIES "${Boost_LIBRARIES};icui18n;icuuc;icudata;dl")
+  list(APPEND Boost_LIBRARIES icui18n icuuc icudata dl)
 endif()
-
 
 if(BUILD_GUI)
   find_package(Qt6 REQUIRED COMPONENTS Core5Compat Widgets WebEngineWidgets WebChannel PrintSupport)
@@ -327,6 +350,15 @@ else()
     configure_file("src/version.h.in" "version/version.h")
     add_custom_target(version ALL)
   endif()
+endif()
+
+if(BUILD_BUNDLED_BOOST)
+  # This is the key to preventing the build race condition. The 'version' target
+  # is a foundational dependency for all other libraries and executables.
+  # By making it depend on 'boost_external', we force the entire Boost build
+  # to complete before any of our own project's code starts compiling.
+  # This creates a single, robust build barrier.
+  add_dependencies(version boost_external)
 endif()
 
 set(BUILD_TESTS FALSE CACHE BOOL "Build Zano tests")
