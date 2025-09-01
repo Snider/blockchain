@@ -7,7 +7,7 @@ inputs:
     required: true
   boost-root:
     description: 'The root directory of the Boost installation.'
-    required: true
+    required: false
   build-type:
     description: 'The CMake build type (e.g., Release, Debug).'
     required: false
@@ -45,7 +45,6 @@ runs:
       env:
         CCACHE_TEMPDIR: ${{ github.workspace }}/build/ccache
         OPENSSL_ROOT_DIR: ${{ github.workspace }}/build/openssl
-        BOOST_ROOT: ${{ inputs.boost-root }}
       with:
         build-dir: build/${{ steps.set_paths.outputs.build_dir_name }}
         generator: ${{ inputs.generator }}
@@ -61,3 +60,4 @@ runs:
           ${{ inputs.build-gui && 'BUILD_GUI=ON' }}
           Boost_INCLUDE_DIR=${{ inputs.boost-root }}/include
           Boost_LIBRARY_DIRS=${{ inputs.boost-root }}/lib
+          DISABLE_TOR=TRUE
