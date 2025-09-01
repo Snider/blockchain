@@ -36,8 +36,7 @@ jobs:
           submodules: recursive
 
       - name: install dependencies
-        run: sudo apt-get install -y autotools-dev libicu-dev libbz2-dev git screen checkinstall zlib1g-dev ccache miniupnpc
-
+        run: sudo apt-get install -y autotools-dev libicu-dev libbz2-dev git screen checkinstall zlib1g-dev ccache miniupnpc build-essential g++ curl cmake libssl-dev bzip2
       - name: ccache caching
         uses: actions/cache@v4
         with:
