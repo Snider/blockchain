@@ -90,26 +90,21 @@ configure: ## Configure the project with the specified options.
 	@cmake -S . -B $(BUILD_DIR) $(CMAKE_FLAGS)
 
 # Build the project using the existing configuration.
-build: build_sdk ## Build all default targets for the current configuration.
+build: configure ## Build all default targets for the current configuration.
 	@echo "--- Building all targets in $(BUILD_DIR) with $(NPROC) jobs ---"
 	@cmake --build $(BUILD_DIR) -- -j$(NPROC)
 
-build-cli: build_sdk ## Build only the command-line interface tools.
-	@echo "--- Building CLI tools in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) --target daemon simplewallet connectivity_tool -- -j$(NPROC)
+build-cli: configure ## Build only the command-line interface tools.
+	@echo "--- Building SDK and CLI tools in $(BUILD_DIR) with $(NPROC) jobs ---"
+	@cmake --build $(BUILD_DIR) --target build_sdk daemon simplewallet connectivity_tool -- -j$(NPROC)
 
-build-gui: build_sdk ## Build only the GUI application.
-	@echo "--- Building GUI in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) --target Zano -- -j$(NPROC)
+build-gui: configure ## Build only the GUI application.
+	@echo "--- Building SDK and GUI in $(BUILD_DIR) with $(NPROC) jobs ---"
+	@cmake --build $(BUILD_DIR) --target build_sdk Zano -- -j$(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
-build_sdk: ## Build bundled dependencies like Boost if required.
+build_sdk: configure ## Build bundled dependencies like Boost if required.
 	@echo "--- Building SDK dependencies ---"
-	@# First, ensure the project is configured so the build_sdk target exists.
-	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [ ! -f "$(BUILD_DIR)/Makefile" ]; then \
-		echo "Project not configured in $(BUILD_DIR). Running 'make configure' first..."; \
-		$(MAKE) configure; \
-	fi
 	@cmake --build $(BUILD_DIR) --target build_sdk
 
 # DANGEROUS: Clean the entire build root, including the cached SDK.
