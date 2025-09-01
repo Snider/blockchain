@@ -90,7 +90,7 @@ configure: ## Configure the project with CMake.
 	@cmake -S . -B $(BUILD_DIR) $(CMAKE_FLAGS)
 
 # Build the project using the existing configuration.
-build: ## Build the project using the existing configuration.
+build: build_sdk ## Build the project using the existing configuration.
 	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs (Targets: $(or $(TARGETS),all)) ---"
 	@cmake --build $(BUILD_DIR) --target $(or $(TARGETS),all) -- -j$(NPROC)
 
@@ -98,7 +98,7 @@ build: ## Build the project using the existing configuration.
 build_sdk: ## Build bundled dependencies like Boost if required.
 	@echo "--- Building SDK dependencies ---"
 	@# First, ensure the project is configured so the build_sdk target exists.
-	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [ ! -f "$(BUILD_DIR)/Makefile" ]; then \
+	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [  -f "$(BUILD_DIR)/Makefile" ]; then \
 		echo "Project not configured in $(BUILD_DIR). Running 'make configure' first..."; \
 		$(MAKE) configure; \
 	fi

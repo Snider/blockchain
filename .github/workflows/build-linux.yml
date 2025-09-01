@@ -55,8 +55,8 @@ jobs:
           arch: 'linux_gcc_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-      - name: Build SDK via Makefile
-        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
+#      - name: Build SDK via Makefile
+#        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
