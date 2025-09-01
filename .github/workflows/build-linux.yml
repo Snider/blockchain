@@ -50,14 +50,12 @@ jobs:
           arch: 'linux_gcc_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-#      - name: Build SDK via Makefile
-#        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
+      - name: Build SDK via Makefile
+        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        run: |
-          make build_sdk BUILD_TYPE=Release STATIC_BUILD=ON
-          make build BUILD_TYPE=Release STATIC_BUILD=ON TARGETS="daemon simplewallet connectivity_tool"
+        run: make build BUILD_TYPE=Release STATIC_BUILD=ON TARGETS="daemon simplewallet connectivity_tool"
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
