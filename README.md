@@ -98,7 +98,7 @@ For instance, by adding the following lines to `~/.bashrc`
     [*GUI version*]
 
        export OPENSSL_ROOT_DIR=/home/user/openssl  
-       export QT_PREFIX_PATH=/home/user/Qt5.11.2/5.11.2/gcc_64
+       export QT_PREFIX_PATH=/home/user/Qt/6.8.3/gcc_64
 
       **NOTICE: Please edit the lines above according to your actual paths.**
    
