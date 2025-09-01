@@ -1,9 +1,12 @@
 # Modern Makefile for the project.
 # Provides a streamlined development workflow and compatibility with old targets.
 
-.PHONY: all dev-build build build-sdk clean clean-dev configure release debug \
-        gui gui-release gui-debug static static-release gui-static \
-        test test-release test-debug tags
+ .PHONY: help all dev-build build build-sdk clean clean-dev configure release debug \
+         gui gui-release gui-debug static static-release gui-static \
+         test test-release test-debug tags
+
+ # Set 'help' as the default target to be executed when 'make' is called without arguments.
+ .DEFAULT_GOAL := help
 
 # --- Primary Build Configuration ---
 # These can be overridden from the command line, e.g., `make BUILD_TYPE=Debug`
@@ -46,32 +49,50 @@ CMAKE_FLAGS += -D STATIC=$(STATIC_BUILD)
 CMAKE_FLAGS += -D TESTNET=$(TESTNET)
 CMAKE_FLAGS += -D DISABLE_TOR=$(DISABLE_TOR)
 
-# --- Core Targets ---
-
-# Default target
-all: release
+# --- Help Target ---
+help:
+	@echo "Lethean Blockchain - Build System"
+	@echo
+	@echo "Usage:  make <target> [OPTIONS...]"
+	@echo
+	@echo "Core Targets:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / { if ($$2 !~ /@hidden/) printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo
+	@echo "Options:"
+	@echo "  BUILD_TYPE=<type>    Specify build type (e.g., Debug, Release). Default: $(BUILD_TYPE)"
+	@echo "  BUILD_GUI=<ON/OFF>   Enable or disable GUI build. Default: $(BUILD_GUI)"
+	@echo "  STATIC_BUILD=<ON/OFF> Enable or disable static build. Default: $(STATIC_BUILD)"
+	@echo "  BUILD_TESTS=<ON/OFF> Enable or disable building tests. Default: $(BUILD_TESTS)"
+	@echo "  TESTNET=<ON/OFF>     Build for testnet. Default: $(TESTNET)"
+	@echo "  DISABLE_TOR=<ON/OFF> Build without TOR support. Default: $(DISABLE_TOR)"
+	@echo
+	@echo "For more information:"
+	@echo "  Documentation: https://lt.hn"
+	@echo "  Discord:       https://discord.lethean.io"
+	@echo "  GitHub:        https://github.com/letheanVPN"
 
 # The main development build target.
 # Cleans artifacts (preserving SDK), re-configures, and builds.
 # Example: `make dev-build BUILD_TYPE=Debug BUILD_GUI=ON`
-dev-build: clean-dev configure build
+dev-build: clean-dev configure build ## Clean artifacts, configure, and build. Recommended for development.
 	@echo
-	@echo "✅ Dev build complete. Binaries are in $(BUILD_DIR)/src"
+	@echo "Dev build complete. Binaries are in $(BUILD_DIR)/src"
+	@echo "$(BUILD_DIR)" > .last_build_dir
 
 # Configure the project using CMake.
-configure:
-	@echo "--- ⚙️  Configuring project in $(BUILD_DIR) ---"
+configure: ## Configure the project with CMake.
+	@echo "--- Configuring project in $(BUILD_DIR) ---"
 	@echo "   Build type: $(BUILD_TYPE), GUI: $(BUILD_GUI), Static: $(STATIC_BUILD), Tests: $(BUILD_TESTS), TOR: $(DISABLE_TOR)"
 	@cmake -S . -B $(BUILD_DIR) $(CMAKE_FLAGS)
 
 # Build the project using the existing configuration.
-build:
-	@echo "--- 🔨 Building project in $(BUILD_DIR) with $(NPROC) jobs ---"
+build: ## Build the project using the existing configuration.
+	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs ---"
 	@cmake --build $(BUILD_DIR) -- -j$(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
-build_sdk:
-	@echo "--- 📦 Building SDK dependencies ---"
+build_sdk: ## Build bundled dependencies like Boost if required.
+	@echo "--- Building SDK dependencies ---"
 	@# First, ensure the project is configured so the build_sdk target exists.
 	@if [ ! -f "$(BUILD_DIR)/build.ninja" ] && [ ! -f "$(BUILD_DIR)/Makefile" ]; then \
 		echo "Project not configured in $(BUILD_DIR). Running 'make configure' first..."; \
@@ -80,56 +101,61 @@ build_sdk:
 	@cmake --build $(BUILD_DIR) --target build_sdk
 
 # DANGEROUS: Clean the entire build root, including the cached SDK.
-clean:
-	@echo "--- 🗑️  Cleaning entire build directory: $(BUILD_ROOT) ---"
+clean: ## DANGEROUS: Deletes the entire build directory, including cached SDKs.
+	@echo "--- Cleaning entire build directory: $(BUILD_ROOT) ---"
 	@rm -rf $(BUILD_ROOT)
 
 # Clean build artifacts but preserve the SDK cache.
-clean-dev:
-	@echo "--- 🧹 Cleaning build artifacts, preserving SDK in $(BUILD_ROOT)/$(SDK_DIR_NAME) ---"
+clean-dev: ## Clean build artifacts but preserve the cached SDK.
+	@echo "--- Cleaning build artifacts, preserving SDK in $(BUILD_ROOT)/$(SDK_DIR_NAME) ---"
 	@mkdir -p $(BUILD_ROOT)
 	@find $(BUILD_ROOT) -mindepth 1 -maxdepth 1 -not -name "$(SDK_DIR_NAME)" -exec rm -rf {} +
 	@echo "Clean complete."
 
 # --- Compatibility Targets (for old workflow) ---
+all: release ## Build the project for release (default).
 
-release:
-	@$(MAKE) configure BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
-	@$(MAKE) build BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
+release: ## Configure and build a release version.
+	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
 
-debug:
-	@$(MAKE) configure BUILD_TYPE=Debug BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
-	@$(MAKE) build BUILD_TYPE=Debug BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
+debug: ## Configure and build a debug version.
+	@$(MAKE) dev-build BUILD_TYPE=Debug BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=OFF
 
-gui: gui-release
+gui: gui-release ## Build a release version with GUI.
 
-gui-release:
-	@$(MAKE) release BUILD_GUI=ON
+gui-release: ##@hidden
+	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=ON BUILD_TESTS=OFF STATIC_BUILD=OFF
 
-gui-debug:
-	@$(MAKE) debug BUILD_GUI=ON
+gui-debug: ## Build a debug version with GUI.
+	@$(MAKE) dev-build BUILD_TYPE=Debug BUILD_GUI=ON BUILD_TESTS=OFF STATIC_BUILD=OFF
 
-static: static-release
+static: static-release ## Build a static release version.
 
-static-release:
-	@$(MAKE) release STATIC_BUILD=ON
+static-release: ##@hidden
+	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=OFF STATIC_BUILD=ON
 
-gui-static:
-	@$(MAKE) release BUILD_GUI=ON STATIC_BUILD=ON
+gui-static: ## Build a static release version with GUI.
+	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=ON BUILD_TESTS=OFF STATIC_BUILD=ON
 
-test: test-release
+test: ## Run tests on the most recently built configuration.
+	@if [ ! -f .last_build_dir ]; then \
+		echo "Error: No build has been run. Use 'make release' or 'make debug' first." >&2; \
+		exit 1; \
+	fi
+	@LAST_BUILD_DIR=$$(cat .last_build_dir); \
+	echo "--- Running tests in $$LAST_BUILD_DIR ---"; \
+	cmake --build $$LAST_BUILD_DIR --target test
 
-test-release:
-	@$(MAKE) release BUILD_TESTS=ON
-	@echo "--- 🏃 Running tests ---"
-	@cd $(BUILD_DIR) && ctest
+test-release: ## Build a release version and run tests.
+	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=ON STATIC_BUILD=OFF
+	@$(MAKE) test
 
-test-debug:
-	@$(MAKE) debug BUILD_TESTS=ON
-	@cd $(BUILD_DIR) && ctest
+test-debug: ## Build a debug version and run tests.
+	@$(MAKE) dev-build BUILD_TYPE=Debug BUILD_GUI=OFF BUILD_TESTS=ON STATIC_BUILD=OFF
+	@$(MAKE) test
 
 # --- Utility Targets ---
 
-tags:
-	@echo "--- 🏷️  Generating ctags ---"
+tags: ## Generate ctags for source code navigation.
+	@echo "--- Generating ctags ---"
 	@ctags -R --sort=1 --c++-kinds=+p --fields=+iaS --extra=+q --language-force=C++ src contrib tests/gtest
