@@ -3,19 +3,6 @@
 
 include(ExternalProject)
 
-# --- Configuration ---
-set(BOOST_VERSION "1.85.0")
-# List of Boost libraries to build. Can be customized via cmake cache.
-set(BOOST_LIBS_TO_BUILD "system;filesystem;locale;thread;timer;date_time;chrono;regex;serialization;atomic;program_options;log")
-
-# --- Version and Download Info ---
-set(BOOST_URL "https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.gz")
-set(BOOST_SHA256 "ab9c9c4797384b0949dd676cf86b4f99553f8c148d767485aaac412af25183e6") # SHA256 for Boost 1.85.0 (CMake version)
-
-if(NOT BOOST_INSTALL_PREFIX)
-    message(FATAL_ERROR "BOOST_INSTALL_PREFIX must be set before including BoostCmake.cmake. This is handled by the main CMakeLists.txt.")
-endif()
-
 # Centralize all working files for this external project inside the SDK directory.
 # This improves caching and isolates file I/O to prevent re-configure loops.
 set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work) # e.g., build/sdk/appleclang-arm64/_work

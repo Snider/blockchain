@@ -266,11 +266,11 @@ if(NOT Boost_FOUND)
   set(BUILD_BUNDLED_BOOST ON) # This is a per-configure decision, no need to cache.
   
   set(BOOST_INSTALL_PREFIX ${BUNDLED_BOOST_INSTALL_PREFIX})
-  # Include the script that defines the 'boost_external' target
-  # Use BoostB2 for version 1.84.0 (b2 build system).
-  # To use the CMake-based build for 1.85.0+, change this to include(BoostCmake).
-  include(BoostCmake)
-  #include(BoostB2)
+  # Set the version and components for the Boost build script to use.
+  set(BOOST_VERSION "1.84.0" CACHE STRING "The version of Boost to download and build")
+  set(BOOST_LIBS_TO_BUILD "${ZANO_BOOST_COMPONENTS}")
+  include(Boost)
+
   
   # Add a custom target to build all SDK dependencies.
   # This allows for a separate, one-time build step to prepare dependencies,

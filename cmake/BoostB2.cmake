@@ -3,22 +3,8 @@
 
 include(ExternalProject)
 
-# --- Configuration ---
-set(BOOST_VERSION "1.84.0")
-# List of Boost libraries to build. Can be customized via cmake cache.
-set(BOOST_LIBS_TO_BUILD "system;filesystem;locale;thread;timer;date_time;chrono;regex;serialization;atomic;program_options;log")
-
-# --- Version and Download Info ---
-set(BOOST_URL "https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.gz")
-set(BOOST_SHA256 "4d27e9efed0f6f152dc28db6430b9d3dfb40c0345da7342eaa5a987dde57bd95") # SHA256 for Boost 1.84.0
-
-if(NOT BOOST_INSTALL_PREFIX)
-    message(FATAL_ERROR "BOOST_INSTALL_PREFIX must be set before including BoostB2.cmake. This is handled by the main CMakeLists.txt.")
-endif()
-
-# Temporary directories for source and build
-set(BOOST_SOURCE_DIR ${CMAKE_BINARY_DIR}/boost_src)
-set(BOOST_BUILD_DIR ${CMAKE_BINARY_DIR}/boost_bld)
+# Centralize all working files for this external project.
+set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work) # e.g., build/sdk/gcc-x64/_work
 
 # --- Boost Build (b2) Arguments ---
 string(REPLACE ";" "," BOOST_LIBS_TO_BUILD_COMMA_SEPARATED "${BOOST_LIBS_TO_BUILD}")
@@ -33,44 +19,87 @@ list(APPEND B2_ARGS
     "--layout=system" # Install libs with simple names (e.g. libboost_program_options.a)
 )
 
-if(CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE MATCHES "Debug"))
-    list(APPEND B2_ARGS "variant=debug")
-else()
-    list(APPEND B2_ARGS "variant=release")
+# Forward the C++ standard.
+if(CMAKE_CXX_STANDARD)
+    list(APPEND B2_ARGS "cxxstd=${CMAKE_CXX_STANDARD}")
 endif()
 
-# --- Cross-compilation Setup ---
-if(CMAKE_CROSSCOMPILING)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(BOOST_TOOLSET "gcc")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(BOOST_TOOLSET "clang")
-    else()
-        message(FATAL_ERROR "Unsupported compiler for Boost cross-compilation: ${CMAKE_CXX_COMPILER_ID}. Please extend cmake/BoostB2.cmake.")
-    endif()
+# --- Platform-specific flags ---
+set(B2_EXTRA_CXX_FLAGS "")
+set(B2_EXTRA_LINK_FLAGS "")
 
-    # Create a user-config.jam file to tell b2 about the cross-compiler
-    set(BOOST_USER_CONFIG_JAM_PATH ${CMAKE_BINARY_DIR}/user-config.jam)
-    set(BOOST_USER_CONFIG_JAM_CONTENT "using ${BOOST_TOOLSET} : : ${CMAKE_CXX_COMPILER} ;")
-    file(WRITE ${BOOST_USER_CONFIG_JAM_PATH} "${BOOST_USER_CONFIG_JAM_CONTENT}")
-
-    list(APPEND B2_ARGS "toolset=${BOOST_TOOLSET}")
-    set(B2_USER_CONFIG_ARG "--user-config=${BOOST_USER_CONFIG_JAM_PATH}")
+# Suppress warnings to keep build logs clean.
+if(MSVC)
+    set(B2_WARNING_FLAGS "/W0")
 else()
-    # --- Native Compilation Setup ---
-    if(MSVC)
-        set(BOOST_TOOLSET "msvc")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(BOOST_TOOLSET "gcc")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(BOOST_TOOLSET "clang")
-    else()
-        set(BOOST_TOOLSET "") # Let Boost auto-detect
+    set(B2_WARNING_FLAGS "-w")
+endif()
+set(B2_EXTRA_CXX_FLAGS "${B2_EXTRA_CXX_FLAGS} ${B2_WARNING_FLAGS}")
+
+if(APPLE)
+    # Architecture
+    if(CMAKE_OSX_ARCHITECTURES)
+        if("${CMAKE_OSX_ARCHITECTURES}" STREQUAL "arm64")
+            list(APPEND B2_ARGS "architecture=arm")
+        elseif("${CMAKE_OSX_ARCHITECTURES}" STREQUAL "x86_64")
+            list(APPEND B2_ARGS "architecture=x86")
+        else()
+            message(WARNING "Unsupported CMAKE_OSX_ARCHITECTURES for b2: ${CMAKE_OSX_ARCHITECTURES}. Letting b2 autodetect.")
+        endif()
     endif()
-    if(BOOST_TOOLSET)
-        list(APPEND B2_ARGS "toolset=${BOOST_TOOLSET}")
+
+    # Deployment target and sysroot
+    if(CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(B2_EXTRA_CXX_FLAGS "${B2_EXTRA_CXX_FLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        set(B2_EXTRA_LINK_FLAGS "${B2_EXTRA_LINK_FLAGS} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    endif()
+    if(CMAKE_OSX_SYSROOT)
+        set(B2_EXTRA_CXX_FLAGS "${B2_EXTRA_CXX_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+        set(B2_EXTRA_LINK_FLAGS "${B2_EXTRA_LINK_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+    endif()
+
+    # ICU for boost_locale
+    find_package(ICU QUIET)
+    if(ICU_FOUND)
+        message(STATUS "Found ICU for Boost.b2 build. Adding include path to compiler flags: ${ICU_INCLUDE_DIRS}")
+        foreach(DIR ${ICU_INCLUDE_DIRS})
+            set(B2_EXTRA_CXX_FLAGS "${B2_EXTRA_CXX_FLAGS} -I${DIR}")
+        endforeach()
+    else()
+        message(WARNING "ICU not found. Building boost_locale without ICU backend via b2.")
+        list(APPEND B2_ARGS "--without-icu")
     endif()
 endif()
+
+# Append extra flags to B2_ARGS, quoting them for b2.
+string(STRIP "${B2_EXTRA_CXX_FLAGS}" B2_EXTRA_CXX_FLAGS_STRIPPED)
+if(B2_EXTRA_CXX_FLAGS_STRIPPED)
+    list(APPEND B2_ARGS "cxxflags=\"${B2_EXTRA_CXX_FLAGS_STRIPPED}\"")
+endif()
+string(STRIP "${B2_EXTRA_LINK_FLAGS}" B2_EXTRA_LINK_FLAGS_STRIPPED)
+if(B2_EXTRA_LINK_FLAGS_STRIPPED)
+    list(APPEND B2_ARGS "linkflags=\"${B2_EXTRA_LINK_FLAGS_STRIPPED}\"")
+endif()
+
+# --- Toolset and Compiler Configuration ---
+# Always create a user-config.jam to explicitly point b2 to the correct compiler.
+if(MSVC)
+    set(BOOST_TOOLSET "msvc")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(BOOST_TOOLSET "gcc")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(BOOST_TOOLSET "clang")
+else()
+    message(FATAL_ERROR "Unsupported compiler for Boost.b2 build: ${CMAKE_CXX_COMPILER_ID}.")
+endif()
+
+file(MAKE_DIRECTORY ${BOOST_WORK_DIR})
+set(BOOST_USER_CONFIG_JAM_PATH ${BOOST_WORK_DIR}/user-config.jam)
+set(BOOST_USER_CONFIG_JAM_CONTENT "using ${BOOST_TOOLSET} : : \"${CMAKE_CXX_COMPILER}\" ;")
+file(WRITE ${BOOST_USER_CONFIG_JAM_PATH} "${BOOST_USER_CONFIG_JAM_CONTENT}")
+
+list(APPEND B2_ARGS "toolset=${BOOST_TOOLSET}")
+set(B2_USER_CONFIG_ARG "--user-config=${BOOST_USER_CONFIG_JAM_PATH}")
 
 # --- Platform-specific commands ---
 if(WIN32)
@@ -86,20 +115,21 @@ endif()
 # --- External Project Definition ---
 ExternalProject_Add(
     boost_external
+    PREFIX ${BOOST_WORK_DIR}
     URL ${BOOST_URL}
     URL_HASH SHA256=${BOOST_SHA256}
-    SOURCE_DIR ${BOOST_SOURCE_DIR}
-    BINARY_DIR ${BOOST_BUILD_DIR} # Not really used by b2, but required by ExternalProject
     INSTALL_DIR ${BOOST_INSTALL_PREFIX}
+    EXCLUDE_FROM_ALL 1
 
-    # Bootstrap step (runs in SOURCE_DIR)
+    # Bootstrap step (runs in <PREFIX>/src/boost_external)
     CONFIGURE_COMMAND <SOURCE_DIR>/${BOOTSTRAP_COMMAND}
 
-    # Build and install step (runs in SOURCE_DIR)
+    # Build and install step (runs in <PREFIX>/src/boost_external)
     BUILD_COMMAND <SOURCE_DIR>/${B2_COMMAND}
         install
         --prefix=<INSTALL_DIR>
-        --build-dir=${BOOST_BUILD_DIR}
+        variant=$<IF:$<CONFIG:Debug>,debug,release>
+        --build-dir=${BOOST_WORK_DIR}/build
         ${B2_ARGS}
         ${B2_USER_CONFIG_ARG}
         -j${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT}
