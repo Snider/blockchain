@@ -288,10 +288,10 @@ include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application
 if(MINGW)
   list(APPEND Boost_LIBRARIES ws2_32 mswsock)
-elseif(NOT MSVC AND NOT APPLE AND NOT CAKEWALLET AND STATIC)
+#elseif(NOT MSVC AND NOT APPLE AND NOT CAKEWALLET AND STATIC)
   # For static builds on Linux, Boost.Locale requires ICU, and other parts may need `dl`.
-  message("NOTICE: Statically linking ICU and dl for Boost")
-  list(APPEND Boost_LIBRARIES icui18n icuuc icudata dl)
+#  message("NOTICE: Statically linking ICU and dl for Boost")
+#  list(APPEND Boost_LIBRARIES icui18n icuuc icudata dl)
 endif()
 
 if(BUILD_GUI)

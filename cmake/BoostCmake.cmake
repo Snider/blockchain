@@ -3,10 +3,6 @@
 
 include(ExternalProject)
 
-# Centralize all working files for this external project inside the SDK directory.
-# This improves caching and isolates file I/O to prevent re-configure loops.
-set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work) # e.g., build/sdk/appleclang-arm64/_work
-
 # --- Boost CMake Build Arguments ---
 set(BOOST_CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -17,6 +13,11 @@ set(BOOST_CMAKE_ARGS
     -DCMAKE_POLICY_DEFAULT_CMP0077=NEW # Required by Boost's CMake for modern behavior
 #    -G "Ninja" # Force Ninja generator to avoid potential issues with the Xcode generator.
 )
+
+# If ICU is required, add the necessary flags for Boost's CMake build.
+if(ICU_ROOT)
+    list(APPEND BOOST_CMAKE_ARGS "-DICU_ROOT=${ICU_ROOT}")
+endif()
 
 # Explicitly forward the compilers to ensure the external project uses the same ones.
 # This improves robustness, especially in complex or non-standard environments.
@@ -105,7 +106,7 @@ ExternalProject_Add(
     URL ${BOOST_URL}
     URL_HASH SHA256=${BOOST_SHA256}
     INSTALL_DIR ${BOOST_INSTALL_PREFIX}
-
+    DEPENDS ${BOOST_EXTRA_DEPS}
     EXCLUDE_FROM_ALL 1 # Exclude from the default 'all' target to improve build system stability.
     # Configure, build, and install steps using CMake
     CMAKE_ARGS ${BOOST_CMAKE_ARGS}

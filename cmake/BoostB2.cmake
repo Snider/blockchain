@@ -3,9 +3,6 @@
 
 include(ExternalProject)
 
-# Centralize all working files for this external project.
-set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work) # e.g., build/sdk/gcc-x64/_work
-
 # --- Boost Build (b2) Arguments ---
 math(EXPR CMAKE_SIZEOF_VOID_P_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
 
@@ -20,6 +17,11 @@ list(APPEND B2_ARGS
     "address-model=${CMAKE_SIZEOF_VOID_P_BITS}"
     "--layout=system" # Install libs with simple names (e.g. libboost_program_options.a)
 )
+
+# If ICU is required, add the necessary flags for b2.
+if(ICU_ROOT)
+    list(APPEND B2_ARGS "-sICU_PATH=${ICU_ROOT}")
+endif()
 
 # Forward the C++ standard.
 if(CMAKE_CXX_STANDARD)
@@ -151,6 +153,7 @@ ExternalProject_Add(
     URL ${BOOST_URL}
     URL_HASH SHA256=${BOOST_SHA256}
     INSTALL_DIR ${BOOST_INSTALL_PREFIX}
+    DEPENDS ${BOOST_EXTRA_DEPS}
     BUILD_IN_SOURCE 1 # This is the key fix: Boost's b2 is an in-source build system.
     UPDATE_COMMAND ${_UPDATE_COMMAND}
     EXCLUDE_FROM_ALL 1

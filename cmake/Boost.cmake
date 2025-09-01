@@ -1,5 +1,7 @@
 include_guard(GLOBAL) # Prevent multiple inclusions
 
+include(ExternalProject)
+
 # --- Configuration ---
 # These variables can be set by the parent scope to override defaults.
 if(NOT DEFINED BOOST_VERSION)
@@ -29,6 +31,8 @@ else()
 endif()
 set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
 set(BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/boost)
+# Centralize all temporary build files for dependencies.
+set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work)
 
 # --- Makefile Integration ---
 # Create a file with variables for the Makefile packaging target. This allows
@@ -188,7 +192,6 @@ if(NOT FORCE_BUILD_BOOST)
                 message(STATUS "Skipping pre-compiled cache for Boost ${BOOST_VERSION} on ${PLATFORM_ID}: no hash defined.")
             endif()
         else()
-            set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work)
             file(MAKE_DIRECTORY ${BOOST_WORK_DIR})
             set(BOOST_CACHE_FILE "${BOOST_WORK_DIR}/${BOOST_CACHE_FILENAME}")
  
@@ -246,6 +249,64 @@ if(NOT FORCE_BUILD_BOOST)
 endif()
 
 # --- Build from Source (if not found in cache) ---
+
+# --- ICU Dependency Build (if locale is requested) ---
+# If boost_locale is needed, we must first build ICU. This is done as a separate
+# external project that the main Boost build will depend on.
+set(BOOST_EXTRA_DEPS "")
+set(ICU_ROOT "")
+list(FIND BOOST_LIBS_TO_BUILD "locale" LOCALE_INDEX)
+if(NOT LOCALE_INDEX EQUAL -1)
+    message(STATUS "Boost 'locale' component requested, preparing to build ICU dependency.")
+    set(ICU_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/icu)
+    set(ICU_ROOT ${ICU_INSTALL_PREFIX})
+
+    # Get number of cores for parallel builds.
+    if(CMAKE_HOST_SYSTEM_PROCESSOR_COUNT AND CMAKE_HOST_SYSTEM_PROCESSOR_COUNT GREATER 0)
+        set(_NPROC ${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT})
+    else()
+        find_program(NPROC_COMMAND nproc)
+        if(NPROC_COMMAND)
+            execute_process(COMMAND ${NPROC_COMMAND} OUTPUT_VARIABLE _NPROC OUTPUT_STRIP_TRAILING_WHITESPACE)
+        else()
+            set(_NPROC 1)
+        endif()
+    endif()
+
+    # ICU's configure script respects these environment variables.
+    set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
+
+    # Determine the correct platform argument for ICU's configure script.
+    if(WIN32)
+        if(MSVC)
+            set(ICU_PLATFORM "MSVC")
+        else()
+            set(ICU_PLATFORM "MinGW") # Or Cygwin
+        endif()
+    elseif(APPLE)
+        set(ICU_PLATFORM "MacOSX")
+    else() # Assuming Linux
+        set(ICU_PLATFORM "Linux")
+    endif()
+
+    ExternalProject_Add(icu_external
+        GIT_REPOSITORY      https://github.com/unicode-org/icu
+        GIT_TAG             e2d85306162d3a0691b070b4f0a73e4012433444 # Pinned commit from release-64-2
+        SOURCE_SUBDIR       icu4c/source
+        INSTALL_DIR         ${ICU_INSTALL_PREFIX}
+        PREFIX              ${BOOST_WORK_DIR}/icu # Use the same work dir structure as boost
+        EXCLUDE_FROM_ALL    1
+
+        # ICU uses autotools. We run its configure script with the correct environment.
+        CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
+                            <SOURCE_DIR>/runConfigureICU ${ICU_PLATFORM} --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
+        BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
+        INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
+    )
+
+    set(BOOST_EXTRA_DEPS icu_external)
+endif()
+
 message(STATUS "Building Boost ${BOOST_VERSION} from source...")
 # --- Dispatch Logic ---
 # Convert version string (e.g., "1.84.0") to a variable-friendly format (e.g., "1_84_0")
