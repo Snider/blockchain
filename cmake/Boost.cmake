@@ -29,6 +29,16 @@ endif()
 set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
 set(BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/boost)
 
+# --- Makefile Integration ---
+# Create a file with variables for the Makefile packaging target. This allows
+# 'make' to know about values computed during CMake configuration.
+set(MAKEFILE_VARS_CONTENT "
+BOOST_VERSION_FOR_PACKAGING := ${BOOST_VERSION}\n
+DEP_PLATFORM_ID_FOR_PACKAGING := ${PLATFORM_ID}\n
+BOOST_SDK_DIR_FOR_PACKAGING := ${BOOST_INSTALL_PREFIX}\n
+")
+file(WRITE "${CMAKE_BINARY_DIR}/packaging.vars" "${MAKEFILE_VARS_CONTENT}")
+
 # --- Define Boost variables for the parent scope ---
 # We set these now so the parent project can use them immediately after this script is included.
 # The paths will be populated by one of the methods below (existing, download, or build).
