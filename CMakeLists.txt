@@ -78,6 +78,35 @@ endif()
 # Add an option to control building of bundled Boost
 option(BUILD_BUNDLED_BOOST "Build a bundled version of Boost from source" OFF)
 
+# --- Version Target Definition ---
+# This target generates the version.h file. It's defined early so other parts
+# of the build system can add dependencies to it.
+set(COMMIT_ID_IN_VERSION ON CACHE BOOL "Include commit ID in version")
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/version")
+if (NOT COMMIT_ID_IN_VERSION)
+  set(VERSION "${VERSION}-unknown")
+  configure_file("src/version.h.in" "version/version.h")
+  add_custom_target(version ALL)
+elseif(DEFINED COMMIT)
+  string(REPLACE "." "\\." VERSION_RE "${VERSION}")
+  if(NOT REFS MATCHES "(\\(|, )tag: v${VERSION_RE}(\\)|, )")
+    set(VERSION "${VERSION}-g${COMMIT}")
+  endif()
+  configure_file("src/version.h.in" "version/version.h")
+  add_custom_target(version ALL)
+else()
+  find_package(Git QUIET)
+  if(Git_FOUND OR GIT_FOUND)
+    message(STATUS "Found Git: ${GIT_EXECUTABLE}")
+    add_custom_target(version ALL "${CMAKE_COMMAND}" "-D" "VERSION=${VERSION}" "-D" "GIT=${GIT_EXECUTABLE}" "-D" "TO=${CMAKE_BINARY_DIR}/version/version.h" "-P" "src/version.cmake" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+  else()
+    message(STATUS "WARNING: Git was not found!")
+    set(VERSION "${VERSION}-unknown")
+    configure_file("src/version.h.in" "version/version.h")
+    add_custom_target(version ALL)
+  endif()
+endif()
+
 include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
 add_definitions(-DSTATICLIB)
@@ -225,24 +254,11 @@ endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")    
 
-# --- Find or Build Boost ---
+# --- Boost Dependency ---
+# This section handles finding, downloading, or building the Boost dependency.
+# It encapsulates all the logic within the included 'Boost.cmake' script.
 
-# Define a stable location for the bundled Boost SDK to allow for CI caching.
-# The path is made specific to the compiler and architecture, matching your request for a path like `build/sdk/ggc-x64/boost`.
-string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID_LOWER)
-if(COMPILER_ID_LOWER STREQUAL "gnu")
-    set(COMPILER_ID_LOWER "gcc")
-endif()
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-    set(PROCESSOR "x64")
-else()
-    set(PROCESSOR ${CMAKE_SYSTEM_PROCESSOR})
-endif()
-# This path is relative to the build root, e.g., /path/to/project/build/sdk/gcc-x64/boost
-# Placing it inside the build tree (relative to CMAKE_BINARY_DIR) prevents an infinite re-configure loop.
-set(BUNDLED_BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${COMPILER_ID_LOWER}-${PROCESSOR}/boost)
-message(STATUS "Bundled Boost SDK path set to: ${BUNDLED_BOOST_INSTALL_PREFIX}")
-
+# Define the list of required Boost components for the project.
 set(ZANO_BOOST_COMPONENTS system filesystem thread timer date_time chrono regex serialization atomic program_options)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
   list(APPEND ZANO_BOOST_COMPONENTS locale)
@@ -251,62 +267,19 @@ if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
   list(APPEND ZANO_BOOST_COMPONENTS log)
 endif()
 
-# 1. First, try to find Boost. We hint at our custom SDK location to find a previously built version.
-if(NOT BUILD_BUNDLED_BOOST)
-  # Only hint at the custom SDK location if it actually exists, otherwise find_package will error.
-  if(EXISTS "${BUNDLED_BOOST_INSTALL_PREFIX}/include/boost/version.hpp")
-    set(Boost_ROOT ${BUNDLED_BOOST_INSTALL_PREFIX})
-  endif()
-  find_package(Boost ${ZANO_BOOST_MIN_VER} QUIET COMPONENTS ${ZANO_BOOST_COMPONENTS}) # This will now search system paths if the bundled one isn't ready.
-endif()
+# Pass the required components to the build script.
+set(BOOST_LIBS_TO_BUILD "${ZANO_BOOST_COMPONENTS}")
 
-# 2. If Boost was not found (or a bundled build was requested), build it.
-if(NOT Boost_FOUND)
-  message(STATUS "Boost not found or BUILD_BUNDLED_BOOST=ON. Building a bundled version.")
-  set(BUILD_BUNDLED_BOOST ON) # This is a per-configure decision, no need to cache.
-  
-  set(BOOST_INSTALL_PREFIX ${BUNDLED_BOOST_INSTALL_PREFIX})
-  # Set the version and components for the Boost build script to use.
-  set(BOOST_VERSION "1.84.0" CACHE STRING "The version of Boost to download and build")
-  set(BOOST_LIBS_TO_BUILD "${ZANO_BOOST_COMPONENTS}")
-  include(Boost)
+# Optionally set the Boost version. The default is handled by Boost.cmake.
+set(BOOST_VERSION "1.84.0" CACHE STRING "The version of Boost to download and build")
 
-  
-  # Add a custom target to build all SDK dependencies.
-  # This allows for a separate, one-time build step to prepare dependencies,
-  # avoiding race conditions and configure-time build issues.
-  # You can run this with: cmake --build . --target build_sdk
-  add_custom_target(build_sdk DEPENDS boost_external
-                    COMMENT "Building all bundled SDK dependencies (e.g., Boost)...")
+# This script will find or prepare the Boost dependency and define the necessary
+# Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
+include(Boost)
 
-  # Manually set the variables that find_package(Boost) would have set.
-  set(Boost_INCLUDE_DIRS ${BOOST_INSTALL_PREFIX}/include)
-  set(Boost_LIBRARY_DIRS ${BOOST_INSTALL_PREFIX}/lib)
-  set(Boost_VERSION ${BOOST_VERSION}) # From Boost.cmake
-
-  # For non-MSVC compilers, we need to construct the list of library files manually.
-  # MSVC can use auto-linking if we don't define Boost_LIBRARIES.
-  if(NOT MSVC)
-    set(Boost_LIBRARIES "")
-    foreach(COMPONENT ${ZANO_BOOST_COMPONENTS})
-      # Append just the library name (e.g., "boost_system"). The linker will find the full file
-      # (e.g., libboost_system.a) by searching the directories provided by Boost_LIBRARY_DIRS.
-      # This avoids hard-coding a path that doesn't exist at configure-time.
-      list(APPEND Boost_LIBRARIES "boost_${COMPONENT}")
-    endforeach()
-  endif()
-  # After setting up the build and defining the variables, set Boost_FOUND to TRUE.
-  # This prevents sub-projects (like tor-connect) from re-running find_package and failing the configuration.
-  set(Boost_FOUND TRUE)
-  # Also, explicitly mark all required components as found. This is necessary to satisfy
-  # find_package calls that check for specific components.
-  foreach(COMPONENT ${ZANO_BOOST_COMPONENTS})
-    string(TOUPPER ${COMPONENT} COMPONENT_UPPER)
-    set(Boost_${COMPONENT_UPPER}_FOUND TRUE)
-  endforeach()
-endif()
-
-message(STATUS "Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
+# The include(Boost) script will FATAL_ERROR if it cannot satisfy the dependency.
+# So, we can assume Boost_FOUND is TRUE after this point.
+message(STATUS "Using Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
 
 # Now that Boost has been found or built, add its include directory to the global path.
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
@@ -324,41 +297,6 @@ endif()
 if(BUILD_GUI)
   find_package(Qt6 REQUIRED COMPONENTS Core5Compat Widgets WebEngineWidgets WebChannel PrintSupport)
   message(STATUS "Found QT Packages")
-endif()
-
-set(COMMIT_ID_IN_VERSION ON CACHE BOOL "Include commit ID in version")
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/version")
-if (NOT COMMIT_ID_IN_VERSION)
-  set(VERSION "${VERSION}-unknown")
-  configure_file("src/version.h.in" "version/version.h")
-  add_custom_target(version ALL)
-elseif(DEFINED COMMIT)
-  string(REPLACE "." "\\." VERSION_RE "${VERSION}")
-  if(NOT REFS MATCHES "(\\(|, )tag: v${VERSION_RE}(\\)|, )")
-    set(VERSION "${VERSION}-g${COMMIT}")
-  endif()
-  configure_file("src/version.h.in" "version/version.h")
-  add_custom_target(version ALL)
-else()
-  find_package(Git QUIET)
-  if(Git_FOUND OR GIT_FOUND)
-    message(STATUS "Found Git: ${GIT_EXECUTABLE}")
-    add_custom_target(version ALL "${CMAKE_COMMAND}" "-D" "VERSION=${VERSION}" "-D" "GIT=${GIT_EXECUTABLE}" "-D" "TO=${CMAKE_BINARY_DIR}/version/version.h" "-P" "src/version.cmake" WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
-  else()
-    message(STATUS "WARNING: Git was not found!")
-    set(VERSION "${VERSION}-unknown")
-    configure_file("src/version.h.in" "version/version.h")
-    add_custom_target(version ALL)
-  endif()
-endif()
-
-if(BUILD_BUNDLED_BOOST)
-  # This is the key to preventing the build race condition. The 'version' target
-  # is a foundational dependency for all other libraries and executables.
-  # By making it depend on 'boost_external', we force the entire Boost build
-  # to complete before any of our own project's code starts compiling.
-  # This creates a single, robust build barrier.
-  add_dependencies(version boost_external)
 endif()
 
 set(BUILD_TESTS FALSE CACHE BOOL "Build Zano tests")

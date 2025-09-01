@@ -7,11 +7,13 @@ include(ExternalProject)
 set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work) # e.g., build/sdk/gcc-x64/_work
 
 # --- Boost Build (b2) Arguments ---
-string(REPLACE ";" "," BOOST_LIBS_TO_BUILD_COMMA_SEPARATED "${BOOST_LIBS_TO_BUILD}")
 math(EXPR CMAKE_SIZEOF_VOID_P_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
 
+foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
+    list(APPEND B2_ARGS "--with-${COMPONENT}")
+endforeach()
+
 list(APPEND B2_ARGS
-    "--with-libraries=${BOOST_LIBS_TO_BUILD_COMMA_SEPARATED}"
     "link=static"
     "runtime-link=static"
     "threading=multi"
@@ -27,14 +29,6 @@ endif()
 # --- Platform-specific flags ---
 set(B2_EXTRA_CXX_FLAGS "")
 set(B2_EXTRA_LINK_FLAGS "")
-
-# Suppress warnings to keep build logs clean.
-if(MSVC)
-    set(B2_WARNING_FLAGS "/W0")
-else()
-    set(B2_WARNING_FLAGS "-w")
-endif()
-set(B2_EXTRA_CXX_FLAGS "${B2_EXTRA_CXX_FLAGS} ${B2_WARNING_FLAGS}")
 
 if(APPLE)
     # Architecture
@@ -74,11 +68,22 @@ endif()
 # Append extra flags to B2_ARGS, quoting them for b2.
 string(STRIP "${B2_EXTRA_CXX_FLAGS}" B2_EXTRA_CXX_FLAGS_STRIPPED)
 if(B2_EXTRA_CXX_FLAGS_STRIPPED)
-    list(APPEND B2_ARGS "cxxflags=\"${B2_EXTRA_CXX_FLAGS_STRIPPED}\"")
+    # Conditionally quote the flags. If they contain spaces (common on macOS),
+    # they must be quoted. If not (common on Linux), omitting the quotes is safer
+    # and avoids platform-specific shell escaping issues.
+    if(B2_EXTRA_CXX_FLAGS_STRIPPED MATCHES " ")
+        list(APPEND B2_ARGS "cxxflags=\"${B2_EXTRA_CXX_FLAGS_STRIPPED}\"")
+    else()
+        list(APPEND B2_ARGS "cxxflags=${B2_EXTRA_CXX_FLAGS_STRIPPED}")
+    endif()
 endif()
 string(STRIP "${B2_EXTRA_LINK_FLAGS}" B2_EXTRA_LINK_FLAGS_STRIPPED)
 if(B2_EXTRA_LINK_FLAGS_STRIPPED)
-    list(APPEND B2_ARGS "linkflags=\"${B2_EXTRA_LINK_FLAGS_STRIPPED}\"")
+    if(B2_EXTRA_LINK_FLAGS_STRIPPED MATCHES " ")
+        list(APPEND B2_ARGS "linkflags=\"${B2_EXTRA_LINK_FLAGS_STRIPPED}\"")
+    else()
+        list(APPEND B2_ARGS "linkflags=${B2_EXTRA_LINK_FLAGS_STRIPPED}")
+    endif()
 endif()
 
 # --- Toolset and Compiler Configuration ---
@@ -103,13 +108,40 @@ set(B2_USER_CONFIG_ARG "--user-config=${BOOST_USER_CONFIG_JAM_PATH}")
 
 # --- Platform-specific commands ---
 if(WIN32)
-    set(BOOTSTRAP_COMMAND "bootstrap.bat")
-    set(B2_COMMAND "b2.exe")
+    set(_BOOTSTRAP_CMD bootstrap.bat)
+    set(_B2_CMD b2.exe)
     # For static linking on Windows, prevent auto-linking by MSVC
     add_compile_definitions(BOOST_ALL_NO_LIB)
 else()
-    set(BOOTSTRAP_COMMAND "./bootstrap.sh")
-    set(B2_COMMAND "./b2")
+    set(_BOOTSTRAP_CMD ./bootstrap.sh)
+    set(_B2_CMD ./b2)
+endif()
+
+# Determine the number of parallel jobs.
+# CMAKE_HOST_SYSTEM_PROCESSOR_COUNT can be unreliable on some platforms (e.g., WSL).
+# We fall back to using `nproc` or default to 1.
+if(CMAKE_HOST_SYSTEM_PROCESSOR_COUNT AND CMAKE_HOST_SYSTEM_PROCESSOR_COUNT GREATER 0)
+    set(B2_JOBS ${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT})
+else()
+    find_program(NPROC_COMMAND nproc)
+    if(NPROC_COMMAND)
+        execute_process(COMMAND ${NPROC_COMMAND} OUTPUT_VARIABLE B2_JOBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+        set(B2_JOBS 1) # Default to 1 if nproc is not found
+    endif()
+endif()
+
+# --- Filesystem Permissions Workaround for WSL/Unix ---
+# On filesystems that don't properly handle Unix execute permissions (like WSL
+# mounting a Windows drive), scripts extracted from the tarball won't be
+# executable. We use the UPDATE_COMMAND to explicitly run `chmod +x` on the
+# necessary scripts after extraction and before configuration.
+set(_UPDATE_COMMAND "")
+if(UNIX AND NOT APPLE)
+    find_program(CHMOD_EXECUTABLE chmod)
+    if(CHMOD_EXECUTABLE)
+        set(_UPDATE_COMMAND ${CHMOD_EXECUTABLE} +x <SOURCE_DIR>/bootstrap.sh && ${CHMOD_EXECUTABLE} +x <SOURCE_DIR>/tools/build/src/engine/build.sh)
+    endif()
 endif()
 
 # --- External Project Definition ---
@@ -119,20 +151,28 @@ ExternalProject_Add(
     URL ${BOOST_URL}
     URL_HASH SHA256=${BOOST_SHA256}
     INSTALL_DIR ${BOOST_INSTALL_PREFIX}
+    BUILD_IN_SOURCE 1 # This is the key fix: Boost's b2 is an in-source build system.
+    UPDATE_COMMAND ${_UPDATE_COMMAND}
     EXCLUDE_FROM_ALL 1
 
     # Bootstrap step (runs in <PREFIX>/src/boost_external)
-    CONFIGURE_COMMAND <SOURCE_DIR>/${BOOTSTRAP_COMMAND}
+    # Explicitly tell bootstrap which compiler toolset and executable to use. This is more robust
+    # than relying on auto-detection, which can fail with compiler wrappers like ccache.
+    # The bootstrap.sh script respects the CXX environment variable, not a --with-cxx flag.
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env
+        "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}"
+        ${_BOOTSTRAP_CMD} --with-toolset=${BOOST_TOOLSET}
 
     # Build and install step (runs in <PREFIX>/src/boost_external)
-    BUILD_COMMAND <SOURCE_DIR>/${B2_COMMAND}
+    BUILD_COMMAND ${_B2_CMD}
         install
         --prefix=<INSTALL_DIR>
         variant=$<IF:$<CONFIG:Debug>,debug,release>
         --build-dir=${BOOST_WORK_DIR}/build
         ${B2_ARGS}
         ${B2_USER_CONFIG_ARG}
-        -j${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT}
+        -j # Pass as a separate argument to avoid shell escaping issues.
+        ${B2_JOBS}
 
     # No separate install command needed as b2 install does it
     INSTALL_COMMAND ""
