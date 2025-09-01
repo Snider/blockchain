@@ -56,6 +56,16 @@ jobs:
           arch: 'linux_gcc_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
+      - name: Build SDK
+        uses: ./.github/actions/cmake-build
+        with:
+          jobs: '4'
+          build-type: 'Release'
+          chain-network: ${{ inputs.chain-network }}
+          target: 'build_sdk'
+          static: 'true'
+          arch: 'x86-64'
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         uses: ./.github/actions/cmake-build
@@ -63,7 +73,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk daemon simplewallet connectivity_tool'
+          target: 'daemon simplewallet connectivity_tool'
           static: 'true'
           arch: 'x86-64'
 
@@ -88,7 +98,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk Zano'
+          target: 'Zano'
           build-gui: 'true'
           static: 'true'
           arch: 'x86-64'

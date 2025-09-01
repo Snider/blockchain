@@ -58,6 +58,17 @@ jobs:
           arch: 'win64_msvc2022_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
+      - name: Build SDK
+        uses: ./.github/actions/cmake-build
+        with:
+          jobs: '4'
+          build-type: 'Release'
+          chain-network: ${{ inputs.chain-network }}
+          target: 'build_sdk'
+          static: 'false'
+          generator: 'Visual Studio 17 2022'
+          arch: 'x86-64'
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         uses: ./.github/actions/cmake-build
@@ -65,7 +76,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk daemon simplewallet connectivity_tool'
+          target: 'daemon simplewallet connectivity_tool'
           static: 'false'
           generator: 'Visual Studio 17 2022'
           arch: 'x86-64'
@@ -91,7 +102,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk Zano'
+          target: 'Zano'
           build-gui: 'true'
           generator: 'Visual Studio 17 2022'
           arch: 'x86-64'

@@ -75,6 +75,14 @@ jobs:
           make -j3 && make install_sw install_ssldirs && cd ..
           rm -rf openssl-1.1.1w/
 
+      - name: Build SDK
+        uses: ./.github/actions/cmake-build
+        with:
+          jobs: '4'
+          build-type: 'Release'
+          chain-network: ${{ inputs.chain-network }}
+          target: 'build_sdk'
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         uses: ./.github/actions/cmake-build
@@ -82,7 +90,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk daemon simplewallet connectivity_tool'
+          target: 'daemon simplewallet connectivity_tool'
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
@@ -105,7 +113,7 @@ jobs:
           jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk Zano'
+          target: 'Zano'
           build-gui: 'true'
 
       - name: GUI Artifacts

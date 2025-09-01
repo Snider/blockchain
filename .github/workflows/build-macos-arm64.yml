@@ -82,14 +82,22 @@ jobs:
           arch: 'clang_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-
-      - name: Build CLI
+      - name: Build SDK
         uses: ./.github/actions/cmake-build
         with:
           jobs: '3'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk daemon simplewallet'
+          target: 'build_sdk'
+
+      - name: Build CLI
+        if: ${{ inputs.build-cli }}
+        uses: ./.github/actions/cmake-build
+        with:
+          jobs: '3'
+          build-type: 'Release'
+          chain-network: ${{ inputs.chain-network }}
+          target: 'daemon simplewallet'
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
@@ -111,7 +119,7 @@ jobs:
           jobs: '3'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk Zano'
+          target: 'Zano'
           build-gui: 'true'
 
       - name: GUI Artifacts
