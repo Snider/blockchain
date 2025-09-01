@@ -82,12 +82,12 @@ jobs:
           arch: 'clang_64'
           modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
-      - name: Build SDK via Makefile
-        run: make build_sdk BUILD_TYPE=Release
+#      - name: Build SDK via Makefile
+#        run: make build_sdk BUILD_TYPE=Release
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        run: make build BUILD_TYPE=Release TARGETS="daemon simplewallet"
+        run: make build-cli BUILD_TYPE=Release STATIC_BUILD=ON
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}

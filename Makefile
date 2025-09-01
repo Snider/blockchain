@@ -84,15 +84,23 @@ dev-build: clean-dev configure build ## Clean artifacts, configure, and build. R
 	@echo "$(BUILD_DIR)" > .last_build_dir
 
 # Configure the project using CMake.
-configure: ## Configure the project with CMake.
+configure: ## Configure the project with the specified options.
 	@echo "--- Configuring project in $(BUILD_DIR) ---"
 	@echo "   Build type: $(BUILD_TYPE), GUI: $(BUILD_GUI), Static: $(STATIC_BUILD), Tests: $(BUILD_TESTS), TOR: $(DISABLE_TOR)"
 	@cmake -S . -B $(BUILD_DIR) $(CMAKE_FLAGS)
 
 # Build the project using the existing configuration.
-build: build_sdk ## Build the project using the existing configuration.
-	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs (Targets: $(or $(TARGETS),all)) ---"
-	@cmake --build $(BUILD_DIR) --target $(or $(TARGETS),all) -- -j$(NPROC)
+build: build_sdk ## Build all default targets for the current configuration.
+	@echo "--- Building all targets in $(BUILD_DIR) with $(NPROC) jobs ---"
+	@cmake --build $(BUILD_DIR) -- -j$(NPROC)
+
+build-cli: build_sdk ## Build only the command-line interface tools.
+	@echo "--- Building CLI tools in $(BUILD_DIR) with $(NPROC) jobs ---"
+	@cmake --build $(BUILD_DIR) --target daemon simplewallet connectivity_tool -- -j$(NPROC)
+
+build-gui: build_sdk ## Build only the GUI application.
+	@echo "--- Building GUI in $(BUILD_DIR) with $(NPROC) jobs ---"
+	@cmake --build $(BUILD_DIR) --target Zano -- -j$(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
 build_sdk: ## Build bundled dependencies like Boost if required.
