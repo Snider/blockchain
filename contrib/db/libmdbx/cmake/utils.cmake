@@ -52,7 +52,7 @@ macro(set_source_files_compile_flags)
       else()
         set(_flags "${_flags} ${CMAKE_${_lang}_FLAGS}")
       endif()
-      # message(STATUS "Set (${file} ${_flags}")
+       message(STATUS "Set (${file} ${_flags}")
       set_source_files_properties(${file} PROPERTIES COMPILE_FLAGS
         "${_flags}")
     endif()
@@ -76,7 +76,7 @@ macro(fetch_version name version_file)
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE rc)
     if(rc OR "${name}_GIT_DESCRIBE" STREQUAL "")
-#      message(FATAL_ERROR "Please fetch tags and/or install latest version of git ('describe --tags --long --dirty' failed)")
+      message(FATAL_ERROR "Please fetch tags and/or install latest version of git ('describe --tags --long --dirty' failed)")
     endif()
 
     execute_process(COMMAND ${GIT} show --no-patch --format=%cI HEAD
@@ -91,7 +91,7 @@ macro(fetch_version name version_file)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE rc)
       if(rc OR "${name}_GIT_TIMESTAMP" STREQUAL "%ci")
-#        message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%cI HEAD' failed)")
+        message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%cI HEAD' failed)")
       endif()
     endif()
 
@@ -101,7 +101,7 @@ macro(fetch_version name version_file)
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE rc)
     if(rc OR "${name}_GIT_TREE" STREQUAL "")
-#      message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%T HEAD' failed)")
+      message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%T HEAD' failed)")
     endif()
 
     execute_process(COMMAND ${GIT} show --no-patch --format=%H HEAD
@@ -110,7 +110,7 @@ macro(fetch_version name version_file)
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE rc)
     if(rc OR "${name}_GIT_COMMIT" STREQUAL "")
-#      message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%H HEAD' failed)")
+      message(FATAL_ERROR "Please install latest version of git ('show --no-patch --format=%H HEAD' failed)")
     endif()
 
     execute_process(COMMAND ${GIT} rev-list --count --no-merges HEAD
@@ -119,7 +119,7 @@ macro(fetch_version name version_file)
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       RESULT_VARIABLE rc)
     if(rc OR "${name}_GIT_REVISION" STREQUAL "")
-#      message(FATAL_ERROR "Please install latest version of git ('rev-list --count --no-merges HEAD' failed)")
+      message(FATAL_ERROR "Please install latest version of git ('rev-list --count --no-merges HEAD' failed)")
     endif()
 
     string(REGEX MATCH "^(v)?([0-9]+)\\.([0-9]+)\\.([0-9]+)(.*)?" git_version_valid "${${name}_GIT_DESCRIBE}")
