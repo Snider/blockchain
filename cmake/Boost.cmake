@@ -13,7 +13,7 @@ endif()
 
 # --- Pre-compiled Cache Configuration ---
 option(FORCE_BUILD_BOOST "Force building Boost from source, ignoring pre-compiled caches." OFF)
-set(PRECOMPILED_CACHE_URL "https://github.com/zano-project/zano/releases/download/prebuilt-deps" CACHE STRING "Base URL for pre-compiled dependency packages")
+set(PRECOMPILED_CACHE_URL "https://github.com/letheanVPN/blockchain/releases/download/prebuilt-deps" CACHE STRING "Base URL for pre-compiled dependency packages")
 
 # --- Platform and SDK Path Calculation ---
 # This logic is encapsulated here to determine the unique path for the SDK.
