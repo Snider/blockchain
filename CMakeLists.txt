@@ -271,7 +271,7 @@ endif()
 set(BOOST_LIBS_TO_BUILD "${ZANO_BOOST_COMPONENTS}")
 
 # Optionally set the Boost version. The default is handled by Boost.cmake.
-set(BOOST_VERSION "1.84.0" CACHE STRING "The version of Boost to download and build")
+set(BOOST_VERSION "1.85.0" CACHE STRING "The version of Boost to download and build")
 
 # This script will find or prepare the Boost dependency and define the necessary
 # Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
