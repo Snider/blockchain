@@ -61,14 +61,7 @@ jobs:
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'daemon simplewallet connectivity_tool'
-          static: 'true'
-          arch: 'x86-64'
+        run: make build BUILD_TYPE=Release STATIC_BUILD=ON TARGETS="daemon simplewallet connectivity_tool"
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
@@ -86,15 +79,7 @@ jobs:
 
       - name: Build GUI
         if: ${{ inputs.build-gui }}
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'Zano'
-          build-gui: 'true'
-          static: 'true'
-          arch: 'x86-64'
+        run: make build BUILD_TYPE=Release STATIC_BUILD=ON BUILD_GUI=ON TARGETS="Zano"
 
       - name: GUI Artifacts
         if: ${{ inputs.build-gui }}

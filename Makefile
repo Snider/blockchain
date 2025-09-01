@@ -91,8 +91,8 @@ configure: ## Configure the project with CMake.
 
 # Build the project using the existing configuration.
 build: ## Build the project using the existing configuration.
-	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs ---"
-	@cmake --build $(BUILD_DIR) -- -j$(NPROC)
+	@echo "--- Building project in $(BUILD_DIR) with $(NPROC) jobs (Targets: $(or $(TARGETS),all)) ---"
+	@cmake --build $(BUILD_DIR) --target $(or $(TARGETS),all) -- -j$(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
 build_sdk: ## Build bundled dependencies like Boost if required.
