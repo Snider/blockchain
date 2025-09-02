@@ -77,3 +77,4 @@ Module.symvers
 Mkfile.old
 dkms.conf
 .idea/deployment.xml
+.idea/cmake.xml
