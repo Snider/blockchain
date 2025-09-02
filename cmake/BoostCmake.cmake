@@ -103,6 +103,7 @@ endif()
 ExternalProject_Add(
     boost_external
     PREFIX ${BOOST_WORK_DIR}
+    DOWNLOAD_DIR ${SDK_CACHE_DIR}
     URL ${BOOST_URL}
     URL_HASH SHA256=${BOOST_SHA256}
     INSTALL_DIR ${BOOST_INSTALL_PREFIX}

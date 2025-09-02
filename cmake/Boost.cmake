@@ -30,9 +30,11 @@ else()
     string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
 endif()
 set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
+set(SDK_CACHE_DIR ${CMAKE_SOURCE_DIR}/build/sdk/_cache)
+set(DEP_WORK_ROOT ${CMAKE_SOURCE_DIR}/build/_work)
 set(BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/boost)
 # Centralize all temporary build files for dependencies.
-set(BOOST_WORK_DIR ${BOOST_INSTALL_PREFIX}/../_work)
+set(BOOST_WORK_DIR ${DEP_WORK_ROOT}/boost)
 
 # --- Makefile Integration ---
 # Create a file with variables for the Makefile packaging target. This allows
@@ -192,8 +194,8 @@ if(NOT FORCE_BUILD_BOOST)
                 message(STATUS "Skipping pre-compiled cache for Boost ${BOOST_VERSION} on ${PLATFORM_ID}: no hash defined.")
             endif()
         else()
-            file(MAKE_DIRECTORY ${BOOST_WORK_DIR})
-            set(BOOST_CACHE_FILE "${BOOST_WORK_DIR}/${BOOST_CACHE_FILENAME}")
+            file(MAKE_DIRECTORY ${SDK_CACHE_DIR})
+            set(BOOST_CACHE_FILE "${SDK_CACHE_DIR}/${BOOST_CACHE_FILENAME}")
  
             message(STATUS "Attempting to download pre-compiled Boost for ${PLATFORM_ID} from ${BOOST_CACHE_URL}")
             # The standard file(DOWNLOAD) command issues a FATAL_ERROR on failure, which prevents
@@ -292,10 +294,11 @@ if(NOT LOCALE_INDEX EQUAL -1)
     ExternalProject_Add(icu_external
         URL                 https://github.com/unicode-org/icu/releases/download/release-64-2/icu4c-64_2-src.tgz
         URL_HASH            SHA256=627d5d8478e6d96fc8c90fed4851239079a561a6a8b9e48b0892f24e82d31d6c
+        DOWNLOAD_DIR        ${SDK_CACHE_DIR}
         # The tarball contains a single 'icu' directory, which CMake strips. The content is 'source'.
         SOURCE_SUBDIR       source
         INSTALL_DIR         ${ICU_INSTALL_PREFIX}
-        PREFIX              ${BOOST_WORK_DIR}/icu # Use the same work dir structure as boost
+        PREFIX              ${DEP_WORK_ROOT}/icu
         EXCLUDE_FROM_ALL    1
 
         # ICU uses autotools. We invoke the script with 'sh' to bypass potential

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.26.3)
 
 PROJECT(Zano)
 set(VERSION "1.0")
