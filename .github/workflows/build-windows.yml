@@ -35,11 +35,6 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Eat the Choco
-        run: |
-          choco install ccache make -y
-          choco install zip -y
-
       - name: ccache caching
         uses: actions/cache@v4
         with:

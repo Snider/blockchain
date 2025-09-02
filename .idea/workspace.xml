@@ -51,11 +51,8 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98928ae7-17a0-4cf3-a624-d115607a891b" name="Changes" comment="Refactor CMake configuration and bootstrap process for improved build management">
-      <change beforePath="$PROJECT_DIR$/.idea/cmake.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/cmake.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/daemon.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/daemon.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/simplewallet.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/simplewallet.xml" afterDir="false" />
+    <list default="true" id="98928ae7-17a0-4cf3-a624-d115607a891b" name="Changes" comment="Add .aiexclude and dependabot configuration for improved dependency management">
+      <change beforePath="$PROJECT_DIR$/.github/workflows/build-windows.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-windows.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -370,7 +367,7 @@
       <workItem from="1756586856576" duration="9059000" />
       <workItem from="1756765629448" duration="6413000" />
       <workItem from="1756772092749" duration="13576000" />
-      <workItem from="1756788900396" duration="400000" />
+      <workItem from="1756788900396" duration="1105000" />
     </task>
     <task id="LOCAL-00001" summary="Updates to QT6!">
       <option name="closed" value="true" />
@@ -436,7 +433,15 @@
       <option name="project" value="LOCAL" />
       <updated>1756789187650</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Add .aiexclude and dependabot configuration for improved dependency management">
+      <option name="closed" value="true" />
+      <created>1756789338824</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1756789338824</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -477,7 +482,8 @@
     <MESSAGE value="restores messages removed during debugging" />
     <MESSAGE value="use 1.85.0, was on 1.84.0 for testing, 85 has cmake" />
     <MESSAGE value="Refactor CMake configuration and bootstrap process for improved build management" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor CMake configuration and bootstrap process for improved build management" />
+    <MESSAGE value="Add .aiexclude and dependabot configuration for improved dependency management" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add .aiexclude and dependabot configuration for improved dependency management" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
