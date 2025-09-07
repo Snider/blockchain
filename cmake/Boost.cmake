@@ -1,6 +1,7 @@
 include_guard(GLOBAL) # Prevent multiple inclusions
 
 include(ExternalProject)
+include(BoostUrls)
 
 # --- Configuration ---
 # These variables can be set by the parent scope to override defaults.
@@ -24,12 +25,27 @@ string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _COMPILER_ID)
 if(_COMPILER_ID STREQUAL "gnu")
     set(_COMPILER_ID "gcc")
 endif()
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-    set(_PLATFORM_ARCH "x64")
+
+if(APPLE)
+    # On Apple platforms, the architecture is a critical part of the platform ID.
+    if(CMAKE_OSX_ARCHITECTURES)
+        set(_PLATFORM_ARCH "${CMAKE_OSX_ARCHITECTURES}")
+    else()
+        # Fallback for older setups or if not explicitly set.
+        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
+    endif()
 else()
-    string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+        set(_PLATFORM_ARCH "x64")
+    else()
+        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
+    endif()
 endif()
+
 set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
+message(STATUS "[Boost.cmake] Determined Platform ID: ${PLATFORM_ID}")
+message(STATUS "[Boost.cmake] CMAKE_OSX_ARCHITECTURES is set to: ${CMAKE_OSX_ARCHITECTURES}")
+
 set(SDK_CACHE_DIR ${CMAKE_SOURCE_DIR}/build/sdk/_cache)
 set(DEP_WORK_ROOT ${CMAKE_SOURCE_DIR}/build/_work)
 set(BOOST_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/boost)
@@ -52,101 +68,53 @@ file(WRITE "${CMAKE_BINARY_DIR}/packaging.vars" "${MAKEFILE_VARS_CONTENT}")
 set(Boost_INCLUDE_DIRS ${BOOST_INSTALL_PREFIX}/include)
 set(Boost_LIBRARY_DIRS ${BOOST_INSTALL_PREFIX}/lib)
 set(Boost_VERSION ${BOOST_VERSION})
-if(NOT MSVC)
-    set(_boost_libs "")
-    foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
-      list(APPEND _boost_libs "boost_${COMPONENT}")
-    endforeach()
-    set(Boost_LIBRARIES "${_boost_libs}")
+
+# Ensure the SDK directories exist before creating imported targets that reference them.
+# This satisfies CMake's check for existing paths in INTERFACE_INCLUDE_DIRECTORIES
+# and IMPORTED_LOCATION, even though the directories will be populated later by
+# the ExternalProject.
+file(MAKE_DIRECTORY "${BOOST_INSTALL_PREFIX}/include" "${BOOST_INSTALL_PREFIX}/lib")
+# Create modern CMake imported targets for each Boost component ahead of time.
+# This is a robust, cross-platform method that bundles library paths and include
+# directories into a single target (e.g., Boost::system), which simplifies linking
+# for the rest of the project. These targets point to where the libraries *will*
+# be after they are built or extracted from a cache.
+if(MSVC)
+    set(_boost_static_lib_prefix "")
+    set(_boost_static_lib_suffix ".lib")
+else()
+    set(_boost_static_lib_prefix "lib")
+    set(_boost_static_lib_suffix ".a")
 endif()
 
-# --- Boost Version Database ---
-# Define known-good versions of Boost, their hashes, and build systems.
-# To add a new version, add its corresponding variables here.
- 
-# Version 1.80.0 (b2 build system) - From non-GitHub sources
-set(BOOST_VERSION_1_80_0_BUILD_SYSTEM "b2")
-set(BOOST_VERSION_1_80_0_SHA256 "e1e7c8a80a07581086a3b60323633734b0361531a14536593419105c88f48f54")
-set(BOOST_VERSION_1_80_0_URLS
-    "https://boostorg.jfrog.io/artifactory/main/release/1.80.0/source/boost_1.80.0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.80.0/boost_1.80.0.tar.gz/download"
-)
- 
- # Version 1.81.0 (b2 build system)
-set(BOOST_VERSION_1_81_0_BUILD_SYSTEM "b2")
-set(BOOST_VERSION_1_81_0_SHA256 "9339a2d1e99415613a7e5436451a54b9eaf045091638425f2847343ed9a16416")
-set(BOOST_VERSION_1_81_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.81.0/boost-1.81.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.81.0/source/boost_1_81_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.81.0/boost_1_81_0.tar.gz/download"
-)
- 
- # Version 1.82.0 (b2 build system)
-set(BOOST_VERSION_1_82_0_BUILD_SYSTEM "b2")
-set(BOOST_VERSION_1_82_0_SHA256 "b136218d6e3201a03dc74533c48112344071a5c48f8b04b3a44503f15a99ea29")
-set(BOOST_VERSION_1_82_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.82.0/boost-1.82.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.82.0/boost_1_82_0.tar.gz/download"
-)
- 
- # Version 1.83.0 (b2 build system)
-set(BOOST_VERSION_1_83_0_BUILD_SYSTEM "b2")
-set(BOOST_VERSION_1_83_0_SHA256 "495a64134b2233481a2734a95099800182c217df02501994e488388c2f1e34b8")
-set(BOOST_VERSION_1_83_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.83.0/boost-1.83.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz/download"
-)
- 
- # Version 1.84.0 (b2 build system)
-set(BOOST_VERSION_1_84_0_BUILD_SYSTEM "b2")
-set(BOOST_VERSION_1_84_0_SHA256 "4d27e9efed0f6f152dc28db6430b9d3dfb40c0345da7342eaa5a987dde57bd95")
-set(BOOST_VERSION_1_84_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.84.0/boost_1_84_0.tar.gz/download"
-)
- 
- # Version 1.85.0 (CMake build system)
-set(BOOST_VERSION_1_85_0_BUILD_SYSTEM "cmake")
-set(BOOST_VERSION_1_85_0_SHA256 "ab9c9c4797384b0949dd676cf86b4f99553f8c148d767485aaac412af25183e6")
-set(BOOST_VERSION_1_85_0_URLS "https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.gz")
- 
- # Version 1.86.0 (CMake build system) - NOTE: No more '-cmake' tarball from this version onwards
-set(BOOST_VERSION_1_86_0_BUILD_SYSTEM "cmake")
-set(BOOST_VERSION_1_86_0_SHA256 "0391e0739750e7f425a87a2a0e0d01b803541d451478152df0398404616c7f5f")
-set(BOOST_VERSION_1_86_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.86.0/boost-1.86.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.86.0/source/boost_1_86_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.86.0/boost_1_86_0.tar.gz/download"
-)
- 
- # Version 1.87.0 (CMake build system)
-set(BOOST_VERSION_1_87_0_BUILD_SYSTEM "cmake")
-set(BOOST_VERSION_1_87_0_SHA256 "919a394b6459792621a089f60f2963b58b19597371f431b991a95570629ea30e")
-set(BOOST_VERSION_1_87_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.87.0/source/boost_1_87_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.87.0/boost_1_87_0.tar.gz/download"
-)
- 
- # Version 1.88.0 (CMake build system)
-set(BOOST_VERSION_1_88_0_BUILD_SYSTEM "cmake")
-set(BOOST_VERSION_1_88_0_SHA256 "59c4be52268a7985163c48c433575a6f3a38458903b231a9a69cf2ac1f8323f4")
-set(BOOST_VERSION_1_88_0_URLS
-    "https://github.com/boostorg/boost/releases/download/boost-1.88.0/boost-1.88.0.tar.gz"
-    "https://boostorg.jfrog.io/artifactory/main/release/1.88.0/source/boost_1_88_0.tar.gz"
-    "https://sourceforge.net/projects/boost/files/boost/1.88.0/boost_1_88_0.tar.gz/download"
-)
+set(_boost_libs "")
+set(BOOST_INTERFACE_LIBS system regex) # List of known header-only/interface libraries
 
-# --- Boost Version Database (Pre-compiled Cache Hashes) ---
-# These are the SHA256 hashes for the pre-compiled binary archives.
-# The variable name format is BOOST_VERSION_<version>_CACHE_SHA256_<platform_id>
-# NOTE: These are placeholders. You must generate the real hashes for your archives.
-set(BOOST_VERSION_1_84_0_CACHE_SHA256_gcc_x64 "PLACEHOLDER_HASH_FOR_1_84_0_GCC_X64_ARCHIVE")
-set(BOOST_VERSION_1_84_0_CACHE_SHA256_appleclang_arm64 "PLACEHOLDER_HASH_FOR_1_84_0_APPLECLANG_ARM64_ARCHIVE")
-set(BOOST_VERSION_1_85_0_CACHE_SHA256_gcc_x64 "PLACEHOLDER_HASH_FOR_1_85_0_GCC_X64_ARCHIVE")
+foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
+    set(TARGET_NAME "Boost::${COMPONENT}")
+    if(NOT TARGET ${TARGET_NAME})
+        list(FIND BOOST_INTERFACE_LIBS ${COMPONENT} _is_interface)
+        if(_is_interface GREATER -1)
+            # This is a known interface library, so we don't set an IMPORTED_LOCATION.
+            add_library(${TARGET_NAME} INTERFACE IMPORTED GLOBAL)
+            set_target_properties(${TARGET_NAME} PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
+            )
+        else()
+            # This is a regular static library.
+            add_library(${TARGET_NAME} STATIC IMPORTED GLOBAL)
+            set_target_properties(${TARGET_NAME} PROPERTIES
+                IMPORTED_LOCATION "${BOOST_INSTALL_PREFIX}/lib/${_boost_static_lib_prefix}boost_${COMPONENT}${_boost_static_lib_suffix}"
+                INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
+            )
+        endif()
+    endif()
+    list(APPEND _boost_libs ${TARGET_NAME})
+endforeach()
+set(Boost_LIBRARIES "${_boost_libs}")
+
+# This variable will be set to TRUE if we decide to build Boost from source.
+set(_BUILD_BOOST_FROM_SOURCE FALSE)
 
 # --- Check for existing valid installation ---
 if(NOT FORCE_BUILD_BOOST)
@@ -250,6 +218,8 @@ if(NOT FORCE_BUILD_BOOST)
     endif()
 endif()
 
+set(_BUILD_BOOST_FROM_SOURCE TRUE)
+
 # --- Build from Source (if not found in cache) ---
 
 # --- ICU Dependency Build (if locale is requested) ---
@@ -263,53 +233,61 @@ if(NOT LOCALE_INDEX EQUAL -1)
     set(ICU_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/build/sdk/${PLATFORM_ID}/icu)
     set(ICU_ROOT ${ICU_INSTALL_PREFIX})
 
-    # Get number of cores for parallel builds.
-    if(CMAKE_HOST_SYSTEM_PROCESSOR_COUNT AND CMAKE_HOST_SYSTEM_PROCESSOR_COUNT GREATER 0)
-        set(_NPROC ${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT})
-    else()
-        find_program(NPROC_COMMAND nproc)
-        if(NPROC_COMMAND)
-            execute_process(COMMAND ${NPROC_COMMAND} OUTPUT_VARIABLE _NPROC OUTPUT_STRIP_TRAILING_WHITESPACE)
-        else()
-            set(_NPROC 1)
-        endif()
+    # Get number of cores for parallel builds using the robust ProcessorCount module.
+    include(ProcessorCount)
+    ProcessorCount(_NPROC)
+    if(_NPROC EQUAL 0)
+        set(_NPROC 1) # Fallback to 1 core if detection fails.
     endif()
 
-    # ICU's configure script respects these environment variables.
-    set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
-
-    # Determine the correct platform argument for ICU's configure script.
-    if(WIN32)
-        if(MSVC)
-            set(ICU_PLATFORM "MSVC")
-        else()
-            set(ICU_PLATFORM "MinGW") # Or Cygwin
-        endif()
-    elseif(APPLE)
-        set(ICU_PLATFORM "MacOSX")
-    else() # Assuming Linux
-        set(ICU_PLATFORM "Linux")
-    endif()
+    # ICU's configure script respects these environment variables. The CMAKE_... flags
+    # are set globally in the toolchain or by the arch.cmake module.
+    set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}" "CFLAGS=${CMAKE_C_FLAGS}" "CXXFLAGS=${CMAKE_CXX_FLAGS}" "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS}")
 
     ExternalProject_Add(icu_external
-        URL                 https://github.com/unicode-org/icu/releases/download/release-64-2/icu4c-64_2-src.tgz
-        URL_HASH            SHA256=627d5d8478e6d96fc8c90fed4851239079a561a6a8b9e48b0892f24e82d31d6c
+        URL                 ${ICU_URL}
+        URL_HASH            SHA256=${ICU_SHA256}
         DOWNLOAD_DIR        ${SDK_CACHE_DIR}
-        # The tarball contains a single 'icu' directory, which CMake strips. The content is 'source'.
-        SOURCE_SUBDIR       source
         INSTALL_DIR         ${ICU_INSTALL_PREFIX}
         PREFIX              ${DEP_WORK_ROOT}/icu
         EXCLUDE_FROM_ALL    1
 
-        # ICU uses autotools. We invoke the script with 'sh' to bypass potential
-        # filesystem permission issues on platforms like WSL.
+        # The configure script path is now defined in BoostUrls.cmake
         CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
-                            sh <SOURCE_DIR>/source/runConfigureICU ${ICU_PLATFORM} --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
+                            sh <SOURCE_DIR>/${ICU_CONFIGURE_PATH}
+                            --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
         BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
         INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
     )
 
     set(BOOST_EXTRA_DEPS icu_external)
+
+    # For static builds on non-MSVC platforms, Boost.Locale requires ICU.
+    # Create imported targets for the ICU libraries. This is the modern CMake way
+    # to handle dependencies, as it encapsulates the library path in a target.
+    if(STATIC AND NOT MSVC)
+        if(NOT TARGET ICU::data)
+            add_library(ICU::data STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::data PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/libicudata.a"
+            )
+            add_dependencies(ICU::data icu_external)
+        endif()
+        if(NOT TARGET ICU::uc)
+            add_library(ICU::uc STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::uc PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/libicuuc.a"
+            )
+            add_dependencies(ICU::uc icu_external)
+        endif()
+        if(NOT TARGET ICU::i18n)
+            add_library(ICU::i18n STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::i18n PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/libicui18n.a"
+            )
+            add_dependencies(ICU::i18n icu_external)
+        endif()
+    endif()
 endif()
 
 message(STATUS "Building Boost ${BOOST_VERSION} from source...")
@@ -323,11 +301,35 @@ set(BOOST_SHA256 ${BOOST_VERSION_${BOOST_VERSION_SUFFIX}_SHA256})
 set(BOOST_URL ${BOOST_VERSION_${BOOST_VERSION_SUFFIX}_URLS}) # Use the list of URLs
 
 if(NOT BOOST_BUILD_SYSTEM)
-    message(FATAL_ERROR "Boost version ${BOOST_VERSION} is not defined in the database in cmake/Boost.cmake. Please add it.")
+    message(FATAL_ERROR "Boost version ${BOOST_VERSION} is not defined in the database in cmake/BoostUrls.cmake. Please add it.")
 endif()
 
 if(NOT BOOST_URL)
-    message(FATAL_ERROR "Source URLs for Boost version ${BOOST_VERSION} are not defined in the database in cmake/Boost.cmake. Please add them.")
+    message(FATAL_ERROR "Source URLs for Boost version ${BOOST_VERSION} are not defined in the database in cmake/BoostUrls.cmake. Please add them.")
+endif()
+
+if(_BUILD_BOOST_FROM_SOURCE)
+    # Check if we need 7z for extraction and find the executable if so.
+    # This is necessary for Boost versions >= 1.89.0 which use .7z archives.
+    set(_needs_7z FALSE)
+    foreach(url ${BOOST_URL})
+        if(url MATCHES "\\.7z$")
+            set(_needs_7z TRUE)
+            break()
+        endif()
+    endforeach()
+
+    if(_needs_7z)
+        if(NOT DEFINED CMAKE_SEVEN_ZIP_COMMAND)
+            find_program(CMAKE_SEVEN_ZIP_COMMAND NAMES 7z 7za DOC "Path to 7-Zip executable")
+        endif()
+
+        if(NOT CMAKE_SEVEN_ZIP_COMMAND)
+            message(FATAL_ERROR "Boost v${BOOST_VERSION} is distributed as a .7z archive, but the 7z executable was not found in your PATH. Please install 7-Zip and ensure it is available in your system's PATH.")
+        else()
+            message(STATUS "Found 7-Zip executable for .7z extraction: ${CMAKE_SEVEN_ZIP_COMMAND}")
+        endif()
+    endif()
 endif()
 
 if(BOOST_BUILD_SYSTEM STREQUAL "cmake")
@@ -335,15 +337,38 @@ if(BOOST_BUILD_SYSTEM STREQUAL "cmake")
     include(${CMAKE_CURRENT_LIST_DIR}/BoostCmake.cmake)
 elseif(BOOST_BUILD_SYSTEM STREQUAL "b2")
     message(STATUS "Boost v${BOOST_VERSION}: Using b2 build system.")
-    include(${CMAKE_CURRENT_LIST_DIR}/BoostB2.cmake)
+    include(${CMAKE_CURRENT_list_DIR}/BoostB2.cmake)
 else()
-    message(FATAL_ERROR "Unknown build system '${BOOST_BUILD_SYSTEM}' defined for Boost v${BOOST_VERSION} in cmake/Boost.cmake.")
+    message(FATAL_ERROR "Unknown build system '${BOOST_BUILD_SYSTEM}' defined for Boost v${BOOST_VERSION} in cmake/BoostUrls.cmake.")
 endif()
 
 # --- Finalize build-from-source setup ---
 if(NOT TARGET boost_external)
     message(FATAL_ERROR "Boost build script failed to create 'boost_external' target. This should not happen.")
 endif()
+
+# Create a modern INTERFACE library to wrap all Boost targets.
+# This is the robust, modern way to handle dependencies.
+if(NOT TARGET Zano::boost_libs)
+    add_library(zano_boost_libs INTERFACE)
+    add_library(Zano::boost_libs ALIAS zano_boost_libs)
+endif()
+target_link_libraries(zano_boost_libs INTERFACE ${Boost_LIBRARIES})
+
+# If ICU was built, link it to the main boost interface library.
+if(TARGET ICU::i18n)
+    target_get_property(icu_include_dir ICU::i18n INTERFACE_INCLUDE_DIRECTORIES)
+    if(icu_include_dir)
+        target_include_directories(zano_boost_libs INTERFACE ${icu_include_dir})
+    endif()
+    target_link_libraries(zano_boost_libs INTERFACE ICU::i18n ICU::uc ICU::data)
+    if(NOT APPLE) # Linux needs 'dl' for ICU
+        target_link_libraries(zano_boost_libs INTERFACE dl)
+    endif()
+endif()
+
+add_dependencies(zano_boost_libs boost_external)
+
 
 add_custom_target(build_sdk DEPENDS boost_external
                   COMMENT "Building all bundled SDK dependencies (e.g., Boost)...")
@@ -355,3 +380,14 @@ foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
     string(TOUPPER ${COMPONENT} COMPONENT_UPPER)
     set(Boost_${COMPONENT_UPPER}_FOUND TRUE)
 endforeach()
+
+# --- Cache Cleaning Target ---
+# This target provides an easy way for developers to clear out all dependency-related
+# caches and installed SDKs. This is useful for forcing a clean download and rebuild
+# of all dependencies, which can resolve issues like corrupted downloads.
+add_custom_target(clean_sdk_cache
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${SDK_CACHE_DIR}
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${DEP_WORK_ROOT}
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_SOURCE_DIR}/build/sdk
+    COMMENT "Cleaning all dependency caches and installed SDKs. Re-run CMake and your build after this."
+)

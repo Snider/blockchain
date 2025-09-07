@@ -108,9 +108,10 @@ ENABLE_SHARED_PCH(currency_core)
 add_library(wallet  ${WALLET})
 if(CMAKE_SYSTEM_NAME STREQUAL "Android" )
   add_dependencies(wallet version ${PCH_LIB_NAME})
-  target_link_libraries(wallet currency_core crypto common zlibstatic ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} android log OpenSSL::SSL OpenSSL::Crypto)
+  target_link_libraries(wallet currency_core crypto common zlibstatic ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs android log OpenSSL::SSL OpenSSL::Crypto)
 else()
   add_dependencies(wallet version ${PCH_LIB_NAME})
+  target_link_libraries(wallet Zano::boost_libs)
   ENABLE_SHARED_PCH(wallet)
 endif()
 
@@ -144,23 +145,32 @@ target_link_libraries(currency_core lmdb mdbx)
 
 add_executable(daemon ${DAEMON} ${P2P} ${CURRENCY_PROTOCOL})
 add_dependencies(daemon version)
-target_link_libraries(daemon rpc stratum currency_core crypto common libminiupnpc-static zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(daemon rpc stratum currency_core crypto common libminiupnpc-static zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 ENABLE_SHARED_PCH(daemon)
                      
 add_executable(connectivity_tool ${CONN_TOOL})
 add_dependencies(connectivity_tool version)
-target_link_libraries(connectivity_tool currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(connectivity_tool currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 ENABLE_SHARED_PCH(connectivity_tool)
 
 add_executable(simplewallet ${SIMPLEWALLET})
 add_dependencies(simplewallet version)
-target_link_libraries(simplewallet wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(simplewallet wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 
 ENABLE_SHARED_PCH(simplewallet)
 
-set_property(TARGET common crypto currency_core rpc stratum wallet PROPERTY FOLDER "libs")
-set_property(TARGET daemon simplewallet connectivity_tool PROPERTY FOLDER "prog")
-set_property(TARGET daemon PROPERTY OUTPUT_NAME "zanod")
+set_property(TARGET common PROPERTY FOLDER "libs")
+set_property(TARGET crypto PROPERTY FOLDER "libs")
+set_property(TARGET currency_core PROPERTY FOLDER "libs")
+set_property(TARGET rpc PROPERTY FOLDER "libs")
+set_property(TARGET stratum PROPERTY FOLDER "libs")
+set_property(TARGET wallet PROPERTY FOLDER "libs")
+
+set_property(TARGET daemon PROPERTY FOLDER "prog")
+set_property(TARGET simplewallet PROPERTY FOLDER "prog")
+set_property(TARGET connectivity_tool PROPERTY FOLDER "prog")
+
+set_target_properties(daemon PROPERTIES OUTPUT_NAME "zanod")
 
 if(BUILD_GUI)
 
@@ -172,7 +182,8 @@ if(BUILD_GUI)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
   SET(MACOSX_BUNDLE_ICON_FILE app.icns)
   add_executable(Zano WIN32 MACOSX_BUNDLE ${QTDAEMON} )
-  target_link_libraries(Zano wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto Qt6::Core5Compat Qt6::Widgets Qt6::WebEngineWidgets Qt6::WebChannel Qt6::PrintSupport)
+  add_dependencies(Zano)
+  target_link_libraries(Zano wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto Qt6::Core5Compat Qt6::Widgets Qt6::WebEngineWidgets Qt6::WebChannel Qt6::PrintSupport)
   ENABLE_SHARED_PCH(Zano)
 	  
   if(APPLE)
@@ -207,7 +218,20 @@ if(SIMPLE_BUNDLE)
       RUNTIME DESTINATION "${INSTALL_DIR}" COMPONENT Runtime
   )
 
-  install(FILES ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES} DESTINATION "${INSTALL_DIR}/lib")
+  # Create a list of actual file paths for the Boost libraries to be used with the install(FILES...) command.
+  # This prevents the Boost_LIBRARIES variable (which contains target names) from being prematurely resolved to paths.
+  set(BOOST_INSTALL_FILES "")
+  foreach(lib_target ${Boost_LIBRARIES})
+    get_target_property(lib_path ${lib_target} IMPORTED_LOCATION_DEBUG)
+    if(NOT lib_path)
+      get_target_property(lib_path ${lib_target} IMPORTED_LOCATION)
+    endif()
+    if(lib_path)
+        list(APPEND BOOST_INSTALL_FILES ${lib_path})
+    endif()
+  endforeach()
+
+  install(FILES ${CMAKE_THREAD_LIBS_INIT} ${BOOST_INSTALL_FILES} DESTINATION "${INSTALL_DIR}/lib")
 
   if(APPLE)
     set(FIXUP_COMMAND ${CMAKE_SOURCE_DIR}/utils/macosx_fixup.sh " " ${INSTALL_DIR})

@@ -3,18 +3,45 @@ cmake_minimum_required(VERSION 3.26.3)
 PROJECT(Zano)
 set(VERSION "1.0")
 
-message("OPENSSL_INCLUDE_DIR: ${OPENSSL_INCLUDE_DIR}")    
-message("OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY}")    
-message("OPENSSL_SSL_LIBRARY: ${OPENSSL_SSL_LIBRARY}")    
+message("OPENSSL_INCLUDE_DIR: ${OPENSSL_INCLUDE_DIR}")
+message("OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY}")
+message("OPENSSL_SSL_LIBRARY: ${OPENSSL_SSL_LIBRARY}")
 
 list(INSERT CMAKE_MODULE_PATH 0
         "${CMAKE_SOURCE_DIR}/cmake")
 
 include(Policy)
 
+# The arch module centralizes architecture detection and flag setting.
+# It should be included early, especially on Apple platforms.
+include(arch)
+
+# On Apple platforms, define deployment target and other settings.
+if(APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+
+  # On Apple platforms, we need to explicitly set the SDK path (sysroot) to
+  # ensure that the correct headers and libraries are found, especially for
+  # dependencies like ICU.
+  if(NOT CMAKE_OSX_SYSROOT)
+      execute_process(
+          COMMAND xcrun --sdk macosx --show-sdk-path
+          OUTPUT_VARIABLE CMAKE_OSX_SYSROOT
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+      message(STATUS "macOS SDK path not set, detected: ${CMAKE_OSX_SYSROOT}")
+  endif()
+
+  # For cross-compiling or special architectures on Apple, the link step
+  # in try_compile can fail. Compiling to a static library avoids the link
+  # step for symbol existence checks, which is a more robust way to check
+  # for features like libm support in subprojects.
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+endif()
+
 option (USE_CCACHE "Use ccache if a usable instance is found" ON)
 if (USE_CCACHE)
-  include(FindCcache) # Has to be included after the project() macro, to be able to read the CXX variable.
+#  include(FindCcache) # Has to be included after the project() macro, to be able to read the CXX variable.
 else()
   message(STATUS "ccache deselected")
 endif()
@@ -55,28 +82,14 @@ enable_testing()
 set(OPENSSL_USE_STATIC_LIBS TRUE) # link statically
 find_package(OpenSSL REQUIRED)
 
-
-if(APPLE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
-  # On macOS, CMAKE_OSX_ARCHITECTURES must be set for the Boost build to succeed,
-  # especially on Apple Silicon. We default it to the host processor architecture.
-  if(NOT CMAKE_OSX_ARCHITECTURES)
-    message(STATUS "Defaulting CMAKE_OSX_ARCHITECTURES to ${CMAKE_HOST_SYSTEM_PROCESSOR}")
-    set(CMAKE_OSX_ARCHITECTURES ${CMAKE_HOST_SYSTEM_PROCESSOR})
-  endif()
-endif()
-
 set(USE_PCH FALSE CACHE BOOL "Use shared precompiled headers")
 set(DISABLE_TOR FALSE CACHE BOOL "Disable TOR library(and related tor-connect submodule)")
 set(TESTNET FALSE CACHE BOOL "Compile for testnet")
 set(BUILD_GUI FALSE CACHE BOOL "Build qt-daemon")
 set(USE_BITCOIN_SECP256K1_FOR_ECDSA FALSE CACHE BOOL "Use bitcoin-secp256k1 library for validating ECDSA(instead of OpenSSL)")
 if(NOT USE_BITCOIN_SECP256K1_FOR_ECDSA)
-  add_definitions(-DUSE_OPEN_SSL_FOR_ECDSA)
+  add_compile_definitions(USE_OPEN_SSL_FOR_ECDSA)
 endif()
-
-# Add an option to control building of bundled Boost
-option(BUILD_BUNDLED_BOOST "Build a bundled version of Boost from source" OFF)
 
 # --- Version Target Definition ---
 # This target generates the version.h file. It's defined early so other parts
@@ -109,22 +122,19 @@ endif()
 
 include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
-add_definitions(-DSTATICLIB)
-
 if(TESTNET)
   message("!!!!!! NOTICE: Project is building for TESTNET !!!!!!")  
-  add_definitions(-DTESTNET)  
+  add_compile_definitions(TESTNET)
 endif()
 
 if(CAKEWALLET)
   message("NOTICE: Building libraries for CAKEWALLET")  
-  add_definitions(-DCAKEWALLET)  
-  add_definitions(-DDISABLE_PFR_SERIALIZATION_SELFCHECK)  
+  add_compile_definitions(CAKEWALLET DISABLE_PFR_SERIALIZATION_SELFCHECK)
 endif()
 
 if(DISABLE_TOR)
   message("NOTICE: Building with disabled TOR support!")  
-  add_definitions(-DDISABLE_TOR)  
+  add_compile_definitions(DISABLE_TOR)
 endif()
 
 
@@ -135,16 +145,26 @@ if (UNIX AND NOT APPLE)
 endif()
 
 # TODO(unassigned): expand on types and versions, and then refactor.
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(CLANG TRUE)
 endif()
 
 
-add_definitions("/DBOOST_NO_CXX98_FUNCTION_BASE")
+add_compile_definitions(
+    STATICLIB
+    BOOST_NO_CXX98_FUNCTION_BASE
+    # The 'epee' library uses the deprecated boost::asio::io_service. This macro re-enables it for compatibility with Boost 1.70+.
+    BOOST_ASIO_USE_DEPRECATED
+)
 
 
 if(MSVC)
-  add_definitions("/D_CRT_SECURE_NO_WARNINGS /D_WIN32_WINNT=0x0600 /DWIN32_LEAN_AND_MEAN /DGTEST_HAS_TR1_TUPLE=0")
+  add_compile_definitions(
+      _CRT_SECURE_NO_WARNINGS
+      _WIN32_WINNT=0x0600
+      WIN32_LEAN_AND_MEAN
+      GTEST_HAS_TR1_TUPLE=0
+  )
   add_compile_options(/EHa /bigobj /Zm1000 /Z7 /MP2 /W3 /GS- /wd4996 /wd4503 /wd4345 /wd4091 /FIinline_c.h)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10485760 /DEBUG dbghelp.lib crypt32.lib")
   if(STATIC)
@@ -155,20 +175,14 @@ if(MSVC)
   include_directories(SYSTEM src/platform/msc)
   configure_file(utils/Directory.Build.props.in ${CMAKE_BINARY_DIR}/Directory.Build.props)
 else()
-  set(ARCH default CACHE STRING "CPU to build for: -march value or default")
-  if("${ARCH}" STREQUAL "default")
-    set(ARCH_FLAG "")
-  else()
-    set(ARCH_FLAG "-march=${ARCH}")
-  endif()
-  set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-aggregate-return -Wno-comment -Wno-unknown-pragmas -Wno-pragmas")
+  set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-aggregate-return -Wno-comment -Wno-unknown-pragmas -Wno-pragmas")
 #  if(NOT APPLE)
 #    set(WARNINGS "${WARNINGS} -Werror")
 #  endif()
-  if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    set(WARNINGS "${WARNINGS} -Wno-implicit-function-declaration -Wno-shift-count-overflow -Wno-error=mismatched-tags -Wno-error=null-conversion -Wno-overloaded-shift-op-parentheses -Wno-error=shift-count-overflow -Wno-error=tautological-constant-out-of-range-compare -Wno-error=unused-private-field -Wno-error=unneeded-internal-declaration")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    set(WARNINGS "${WARNINGS} -Wno-implicit-function-declaration -Wno-shift-count-overflow -Wno-error=mismatched-tags -Wno-error=null-conversion -Wno-overloaded-shift-op-parentheses -Wno-error=shift-count-overflow -Wno-error=tautological-constant-out-of-range-compare -Wno-error=unused-private-field -Wno-error=unneeded-internal-declaration -Wno-deprecated-copy -Wno-deprecated-declarations")
   else()
-    set(WARNINGS "${WARNINGS} -Wno-error=write-strings -Wlogical-op -Wno-error=maybe-uninitialized")
+    set(WARNINGS "${WARNINGS} -Wno-error=write-strings")
   endif()
 
   # Since gcc 4.9 the LTO format is non-standard (slim), so we need the gcc-specific ar and ranlib binaries
@@ -201,8 +215,8 @@ else()
   else()
     set(STATIC_ASSERT_FLAG "-Dstatic_assert=_Static_assert")
   endif()
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -D_GNU_SOURCE ${MINGW_FLAG} ${STATIC_ASSERT_FLAG} ${WARNINGS} ${C_WARNINGS} ${ARCH_FLAG}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -ftemplate-depth-1024 -D_GNU_SOURCE ${APPLE_FLAG} ${MINGW_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_FLAG}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -D_GNU_SOURCE ${MINGW_FLAG} ${STATIC_ASSERT_FLAG} ${WARNINGS} ${C_WARNINGS} ${ARCH_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -ftemplate-depth-1024 -D_GNU_SOURCE ${APPLE_FLAG} ${MINGW_FLAG} ${WARNINGS} ${CXX_WARNINGS} ${ARCH_CXX_FLAGS}")
   if (NOT APPLE AND NOT MSVC)
     if (CLANG)
       set(LLVM_USE_LINKER "gold")
@@ -230,7 +244,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${RELEASE_FLAGS}")
   if(STATIC)
     if(APPLE)
-      message(SEND_ERROR "Static build is not supported on MacOS X")
+      #message(SEND_ERROR "Static build is not supported on MacOS X")
     else()
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
     endif()
@@ -239,9 +253,9 @@ endif()
 
 
 # always use local Boost installation rather than the system-wide (unless ZANO_USE_SYSTEM_BOOST is defined for some reason, which is not recommended)
-if(NOT DEFINED ENV{ZANO_USE_SYSTEM_BOOST})
+#if(NOT DEFINED ENV{ZANO_USE_SYSTEM_BOOST})
   set(Boost_NO_SYSTEM_PATHS ON)
-endif()
+#endif()
 
 if(MSVC)
   set(Boost_USE_STATIC_LIBS ON)
@@ -259,19 +273,19 @@ message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 # It encapsulates all the logic within the included 'Boost.cmake' script.
 
 # Define the list of required Boost components for the project.
-set(ZANO_BOOST_COMPONENTS system filesystem thread timer date_time chrono regex serialization atomic program_options)
+set(ZANO_BOOST_COMPONENTS "filesystem;thread;timer;date_time;chrono;regex;serialization;atomic;program_options")
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
   list(APPEND ZANO_BOOST_COMPONENTS locale)
 endif()
 if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
-  list(APPEND ZANO_BOOST_COMPONENTS log)
+  list(APPEND ZANO_BOOST_COMPONENTS log log_setup)
 endif()
 
 # Pass the required components to the build script.
-set(BOOST_LIBS_TO_BUILD "${ZANO_BOOST_COMPONENTS}")
+set(BOOST_LIBS_TO_BUILD "system;${ZANO_BOOST_COMPONENTS}")
 
 # Optionally set the Boost version. The default is handled by Boost.cmake.
-set(BOOST_VERSION "1.85.0" CACHE STRING "The version of Boost to download and build")
+set(BOOST_VERSION "1.86.0" CACHE STRING "The version of Boost to download and build")
 
 # This script will find or prepare the Boost dependency and define the necessary
 # Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
@@ -282,16 +296,16 @@ include(Boost)
 message(STATUS "Using Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
 
 # Now that Boost has been found or built, add its include directory to the global path.
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+# The SYSTEM keyword can sometimes have unintended side effects in complex builds.
+# Using a regular include path is more direct and ensures it's added to the search path,
+# even if it may produce warnings from the library headers. This resolves issues where
+# the path isn't correctly propagated to all targets.
+include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application
 if(MINGW)
   list(APPEND Boost_LIBRARIES ws2_32 mswsock)
-#elseif(NOT MSVC AND NOT APPLE AND NOT CAKEWALLET AND STATIC)
-  # For static builds on Linux, Boost.Locale requires ICU, and other parts may need `dl`.
-#  message("NOTICE: Statically linking ICU and dl for Boost")
-#  list(APPEND Boost_LIBRARIES icui18n icuuc icudata dl)
 endif()
 
 if(BUILD_GUI)

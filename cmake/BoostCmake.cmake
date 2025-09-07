@@ -2,21 +2,47 @@
 # It is intended to be included from the main CMakeLists.txt.
 
 include(ExternalProject)
+include(arch)
 
 # --- Boost CMake Build Arguments ---
+message(STATUS "[BoostCmake.cmake] Configuring Boost build. CMAKE_OSX_ARCHITECTURES: ${CMAKE_OSX_ARCHITECTURES}")
+
+# For modern Boost versions (approx. 1.82+), the CMake build system uses a
+# different set of variables to control the build.
 set(BOOST_CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-    -DBOOST_INCLUDE_LIBRARIES=${BOOST_LIBS_TO_BUILD}
     -DBUILD_TESTING=OFF
-    -DBOOST_BUILD_TESTS=OFF
-    -DBOOST_BUILD_EXAMPLES=OFF
-    -DCMAKE_POLICY_DEFAULT_CMP0077=NEW # Required by Boost's CMake for modern behavior
-#    -G "Ninja" # Force Ninja generator to avoid potential issues with the Xcode generator.
+    # Use the standard BUILD_SHARED_LIBS to control static/shared builds.
+    -DBUILD_SHARED_LIBS=OFF
 )
+
+# Pass the list of required libraries via the BUILD_LIBS variable, as a
+# comma-separated string (not semicolon-separated).
+string(REPLACE ";" "," BOOST_LIBS_STRING "${BOOST_LIBS_TO_BUILD}")
+list(APPEND BOOST_CMAKE_ARGS "-DBUILD_LIBS=${BOOST_LIBS_STRING}")
+
+set(BOOST_EXTRA_C_FLAGS "")
+set(BOOST_EXTRA_CXX_FLAGS "")
+set(BOOST_EXTRA_LINKER_FLAGS "")
 
 # If ICU is required, add the necessary flags for Boost's CMake build.
 if(ICU_ROOT)
     list(APPEND BOOST_CMAKE_ARGS "-DICU_ROOT=${ICU_ROOT}")
+    # Explicitly add ICU include and lib paths to ensure the correct version is used.
+    set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} -I${ICU_ROOT}/include")
+    set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} -I${ICU_ROOT}/include")
+    set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} -L${ICU_ROOT}/lib")
+endif()
+
+# Append architecture-specific flags from arch.cmake
+if(ARCH_C_FLAGS)
+    set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} ${ARCH_C_FLAGS}")
+endif()
+if(ARCH_CXX_FLAGS)
+    set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} ${ARCH_CXX_FLAGS}")
+endif()
+if(ARCH_LINKER_FLAGS)
+    set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} ${ARCH_LINKER_FLAGS}")
 endif()
 
 # Explicitly forward the compilers to ensure the external project uses the same ones.
@@ -34,36 +60,33 @@ if(CMAKE_BUILD_TYPE)
     list(APPEND BOOST_CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
 endif()
 
-set(BOOST_EXTRA_CXX_FLAGS "")
-if(APPLE)
-    # On macOS, boost_locale can fail trying to find ICU headers from Homebrew.
-    # We find ICU here and inject its include path directly into the compiler flags for the Boost build.
-    # This is more robust than relying on the sub-project's find_package logic.
-    find_package(ICU QUIET)
-    if(ICU_FOUND)
-        message(STATUS "Found ICU for Boost build. Adding include path to compiler flags: ${ICU_INCLUDE_DIRS}")
-        foreach(DIR ${ICU_INCLUDE_DIRS})
-            set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} -I${DIR}")
-        endforeach()
-    else()
-        # If ICU is not found, explicitly disable it in Boost to prevent build errors.
-        message(WARNING "ICU not found. Building boost_locale without ICU backend. This may affect unicode support.")
-        list(APPEND BOOST_CMAKE_ARGS -DBOOST_LOCALE_WITH_ICU=OFF)
-    endif()
-    # Also disable iconv to be safe, as it can cause similar issues.
-    list(APPEND BOOST_CMAKE_ARGS -DBOOST_LOCALE_WITH_ICONV=OFF)
-endif()
-
 # Combine warning flags and extra flags and pass them to the Boost build.
 set(BOOST_WARNING_FLAGS "-w") # -w for GCC/Clang
 if(MSVC)
   set(BOOST_WARNING_FLAGS "/W0")
 endif()
+
+string(STRIP "${BOOST_WARNING_FLAGS} ${BOOST_EXTRA_C_FLAGS}" BOOST_C_FLAGS_INIT)
+if(BOOST_C_FLAGS_INIT)
+    list(APPEND BOOST_CMAKE_ARGS "-DCMAKE_C_FLAGS_INIT=${BOOST_C_FLAGS_INIT}")
+endif()
+
 string(STRIP "${BOOST_WARNING_FLAGS} ${BOOST_EXTRA_CXX_FLAGS}" BOOST_CXX_FLAGS_INIT)
 if(BOOST_CXX_FLAGS_INIT)
     # The argument must be quoted to ensure that the entire string of flags (which contains spaces)
     # is treated as a single argument. Without quotes, it gets split, and the flags are lost.
     list(APPEND BOOST_CMAKE_ARGS "-DCMAKE_CXX_FLAGS_INIT=${BOOST_CXX_FLAGS_INIT}")
+endif()
+
+# Pass linker flags to the Boost build. This is important on Apple platforms to
+# ensure the linker targets the correct architecture, especially for dependencies.
+if(BOOST_EXTRA_LINKER_FLAGS)
+    string(STRIP "${BOOST_EXTRA_LINKER_FLAGS}" BOOST_LINKER_FLAGS_INIT)
+    if(BOOST_LINKER_FLAGS_INIT)
+        list(APPEND BOOST_CMAKE_ARGS "-DCMAKE_EXE_LINKER_FLAGS_INIT=${BOOST_LINKER_FLAGS_INIT}")
+        list(APPEND BOOST_CMAKE_ARGS "-DCMAKE_SHARED_LINKER_FLAGS_INIT=${BOOST_LINKER_FLAGS_INIT}")
+        list(APPEND BOOST_CMAKE_ARGS "-DCMAKE_MODULE_LINKER_FLAGS_INIT=${BOOST_LINKER_FLAGS_INIT}")
+    endif()
 endif()
 
 # Forward macOS-specific settings for correct architecture and SDK.
@@ -89,14 +112,70 @@ endif()
 
 # If a compiler launcher like ccache is used, it can sometimes interfere with
 # the configuration checks of external projects. We explicitly disable it for
-# the Boost build to avoid such issues.
-#if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
-#    list(APPEND BOOST_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER=)
-#endif()
+# the Boost build to ensure a clean installation.
+if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
+    list(APPEND BOOST_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER=)
+endif()
 
 # Forward toolchain file for cross-compilation
 if(CMAKE_TOOLCHAIN_FILE)
     list(APPEND BOOST_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+endif()
+
+# --- Prepare Verification Command Arguments ---
+# We build the argument list for the verification script here to correctly handle
+# optional variables. The test project expects a pipe-separated string of
+# components, so we convert the CMake list here.
+string(REPLACE ";" "|" BOOST_LIBS_TO_BUILD_STRING "${BOOST_LIBS_TO_BUILD}")
+
+# We build the argument list for the verification script here to correctly handle
+# optional variables. TEST_COMMAND does not support generator expressions, so we
+# must construct the command manually.
+set(VERIFY_BOOST_ARGS
+    -DTEST_BOOST_INSTALL_PREFIX=<INSTALL_DIR>
+    -DTEST_BOOST_LIBS_STRING=${BOOST_LIBS_TO_BUILD_STRING}
+    -DTEST_BOOST_VERSION=${BOOST_VERSION}
+    -DTEST_BOOST_WORK_DIR=${BOOST_WORK_DIR}
+)
+
+# Forward the ICU root path separately. This is more robust than constructing
+# a complex, semicolon-separated path with an ExternalProject placeholder.
+if(ICU_ROOT)
+    list(APPEND VERIFY_BOOST_ARGS "-DTEST_ICU_ROOT=${ICU_ROOT}")
+endif()
+
+# Forward the build configuration to the verification script. This is crucial
+# to ensure the test project is configured with the same settings as the main build.
+if(CMAKE_GENERATOR)
+    # Pass the generator as a -D variable. The -G flag is not for script mode (-P).
+    # The entire -D... argument must be quoted for list(APPEND) to treat it as a
+    # single element, correctly handling generators with spaces like "Unix Makefiles".
+    list(APPEND VERIFY_BOOST_ARGS "-DTEST_CMAKE_GENERATOR=${CMAKE_GENERATOR}")
+endif()
+if(CMAKE_BUILD_TYPE)
+    list(APPEND VERIFY_BOOST_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+endif()
+if(CMAKE_TOOLCHAIN_FILE AND EXISTS "${CMAKE_TOOLCHAIN_FILE}")
+    list(APPEND VERIFY_BOOST_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+endif()
+if(APPLE)
+    if(DEFINED CMAKE_OSX_ARCHITECTURES)
+        list(APPEND VERIFY_BOOST_ARGS -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES})
+    endif()
+    if(DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+        list(APPEND VERIFY_BOOST_ARGS -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET})
+    endif()
+    if(DEFINED CMAKE_OSX_SYSROOT AND EXISTS "${CMAKE_OSX_SYSROOT}")
+        list(APPEND VERIFY_BOOST_ARGS -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT})
+    endif()
+endif()
+list(APPEND VERIFY_BOOST_ARGS -P ${CMAKE_CURRENT_LIST_DIR}/VerifyBoost.cmake)
+
+# --- Determine Processor Count for Parallel Build ---
+include(ProcessorCount)
+ProcessorCount(BOOST_JOBS)
+if(BOOST_JOBS EQUAL 0)
+    set(BOOST_JOBS 1) # Fallback to 1 core if detection fails.
 endif()
 
 # --- External Project Definition ---
@@ -113,10 +192,17 @@ ExternalProject_Add(
     CMAKE_ARGS ${BOOST_CMAKE_ARGS}
     # Use generator expressions to handle multi-config generators
 
-    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
+    BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG> --parallel ${BOOST_JOBS}
     INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --config $<CONFIG>
 
     LOG_CONFIGURE 1
     LOG_BUILD 1
     LOG_INSTALL 1
+
+    # --- Verification Step ---
+    # After installation, run a small test project to verify that the new Boost
+    # installation is complete and usable. This helps catch issues with the build,
+    # installation, or dependencies like ICU.
+    TEST_AFTER_INSTALL 1
+    TEST_COMMAND ${CMAKE_COMMAND} ${VERIFY_BOOST_ARGS}
 )

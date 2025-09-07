@@ -1,6 +1,0 @@
-contrib
-resources
-snap
-utils/*
-build
-!cmake/

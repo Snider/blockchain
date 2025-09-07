@@ -63,7 +63,7 @@ if(APPLE)
         endforeach()
     else()
         message(WARNING "ICU not found. Building boost_locale without ICU backend via b2.")
-        list(APPEND B2_ARGS "--without-icu")
+#        list(APPEND B2_ARGS "--without-icu")
     endif()
 endif()
 
@@ -119,18 +119,11 @@ else()
     set(_B2_CMD ./b2)
 endif()
 
-# Determine the number of parallel jobs.
-# CMAKE_HOST_SYSTEM_PROCESSOR_COUNT can be unreliable on some platforms (e.g., WSL).
-# We fall back to using `nproc` or default to 1.
-if(CMAKE_HOST_SYSTEM_PROCESSOR_COUNT AND CMAKE_HOST_SYSTEM_PROCESSOR_COUNT GREATER 0)
-    set(B2_JOBS ${CMAKE_HOST_SYSTEM_PROCESSOR_COUNT})
-else()
-    find_program(NPROC_COMMAND nproc)
-    if(NPROC_COMMAND)
-        execute_process(COMMAND ${NPROC_COMMAND} OUTPUT_VARIABLE B2_JOBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    else()
-        set(B2_JOBS 1) # Default to 1 if nproc is not found
-    endif()
+# Determine the number of parallel jobs using the robust ProcessorCount module.
+include(ProcessorCount)
+ProcessorCount(B2_JOBS)
+if(B2_JOBS EQUAL 0)
+    set(B2_JOBS 1) # Fallback to 1 core if detection fails.
 endif()
 
 # --- Filesystem Permissions Workaround for WSL/Unix ---

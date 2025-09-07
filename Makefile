@@ -16,6 +16,7 @@ BUILD_TESTS ?= OFF
 STATIC_BUILD ?= OFF
 TESTNET ?= OFF
 DISABLE_TOR ?= ON
+DEFAULT_BUILD_TARGET ?= all
 
 # --- Build Paths and Tools Configuration ---
 BUILD_ROOT := build
@@ -74,7 +75,7 @@ help: bootstrap-cmake ## Display this help message.
 # The main development build target.
 # Cleans artifacts (preserving SDK), re-configures, and builds.
 # Example: `make dev-build BUILD_TYPE=Debug BUILD_GUI=ON`
-dev-build: clean-dev build ## Clean artifacts, configure, and build. Recommended for development.
+dev-build: clean-build build ## Clean artifacts, configure, and build. Recommended for development.
 	@$(CMAKE) -E echo ""
 	@$(CMAKE) -E echo "Dev build complete. Binaries are in $(BUILD_DIR_FOR_MAKE)/src"
 
@@ -119,7 +120,7 @@ clean: bootstrap-cmake ## DANGEROUS: Deletes the entire build directory, includi
 	@$(CMAKE) -E rm -rf $(BUILD_ROOT)
 
 # Clean build artifacts but preserve the SDK cache.
-clean-dev: bootstrap-cmake ## Clean build artifacts but preserve the cached SDK.
+clean-build: bootstrap-cmake ## Clean build artifacts but preserve the cached SDK.
 	@$(CMAKE) -E rm -f .build_dir_for_make .last_build_dir
 	@$(CMAKE) -E echo "--- Cleaning build artifacts, preserving SDK in $(BUILD_ROOT)/$(SDK_DIR_NAME) ---"
 	@$(CMAKE) -E make_directory $(BUILD_ROOT)
