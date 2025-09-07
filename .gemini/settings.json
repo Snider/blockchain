@@ -1,0 +1,26 @@
+{
+  "ide": {
+    "enabled": true
+  },
+  "context": {
+    "loadFromIncludeDirectories": true,
+    "includeDirectories": [
+      "src",
+      "cmake"
+    ]
+  },
+  "tools": {
+    "sandbox": "docker"
+  },
+  "mcpServers": {
+    "fetch": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "mcp/fetch"
+      ]
+    }
+  }
+}

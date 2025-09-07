@@ -3,7 +3,7 @@
 
  .PHONY: help all dev-build build build-sdk clean clean-dev configure release debug \
          gui gui-release gui-debug static static-release gui-static package-boost \
-         test test-release test-debug tags
+         test test-release test-debug tags debug-configure
 
  # Set 'help' as the default target to be executed when 'make' is called without arguments.
  .DEFAULT_GOAL := help
@@ -54,6 +54,8 @@ $(CMAKE_MK) $(NPROC_MK): cmake/utils/bootstrap.cmake Makefile
 	@cmake -E make_directory $(dir $(CMAKE_MK))
 	@cmake -D CMAKE_WANTED_VERSION=$(CMAKE_WANTED_VERSION) \
 	       -D BUILD_ROOT=$(BUILD_ROOT) \
+	       -D CMAKE_MK_FILE_OUT="$(CMAKE_MK)" \
+	       -D NPROC_MK_FILE_OUT="$(NPROC_MK)" \
 	       -P cmake/utils/bootstrap.cmake
 
 .PHONY: bootstrap-cmake
@@ -87,10 +89,24 @@ configure: bootstrap-cmake ## Configure the project with the specified options.
 	       -D DISABLE_TOR=$(DISABLE_TOR) \
 	       -P cmake/utils/configure.cmake
 
+# Hidden target for debugging the configure script without re-bootstrapping.
+# This target is not shown in 'make help' and assumes the environment
+# has been bootstrapped at least once (so that $(CMAKE) is defined).
+debug-configure:
+	@echo "--- [DEBUG] Re-running configure script ---"
+	@$(CMAKE) -D BUILD_ROOT=$(BUILD_ROOT) \
+	       -D BUILD_TYPE=$(BUILD_TYPE) \
+	       -D BUILD_GUI=$(BUILD_GUI) \
+	       -D BUILD_TESTS=$(BUILD_TESTS) \
+	       -D STATIC_BUILD=$(STATIC_BUILD) \
+	       -D TESTNET=$(TESTNET) \
+	       -D DISABLE_TOR=$(DISABLE_TOR) \
+	       -P cmake/utils/configure.cmake
+
 # Build the project using the existing configuration.
 build: configure ## Build the specified targets or all default targets.
-	@$(CMAKE) -E echo "--- Building project in $(BUILD_DIR_FOR_MAKE) with $(NPROC) jobs (Targets: $(or $(TARGETS),all)) ---"
-	@$(CMAKE) --build $(BUILD_DIR_FOR_MAKE) --target $(or $(TARGETS),all) -- -j$(NPROC)
+	@$(CMAKE) -E echo "--- Building project in $(BUILD_DIR_FOR_MAKE) with $(NPROC) jobs (Targets: $(or $(TARGETS),$(DEFAULT_BUILD_TARGET))) ---"
+	@$(CMAKE) --build $(BUILD_DIR_FOR_MAKE) --target $(or $(TARGETS),$(DEFAULT_BUILD_TARGET)) --parallel $(NPROC)
 
 # Build the SDK dependencies (e.g., Boost) separately.
 build_sdk: bootstrap-cmake configure ## Build bundled dependencies like Boost if required.

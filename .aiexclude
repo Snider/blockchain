@@ -1,5 +1,6 @@
 contrib
 resources
 snap
-utils
+utils/*
 build
+!cmake/

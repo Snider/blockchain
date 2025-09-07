@@ -14,10 +14,15 @@
 if(NOT DEFINED CMAKE_WANTED_VERSION OR NOT DEFINED BUILD_ROOT)
     message(FATAL_ERROR "CMAKE_WANTED_VERSION and BUILD_ROOT must be defined.")
 endif()
+if(NOT DEFINED CMAKE_MK_FILE_OUT OR NOT DEFINED NPROC_MK_FILE_OUT)
+    message(FATAL_ERROR "This script should be called from the Makefile which defines CMAKE_MK_FILE_OUT and NPROC_MK_FILE_OUT.")
+endif()
 
-set(TOOLS_DIR "${BUILD_ROOT}/tools")
-set(CMAKE_MK_FILE "${BUILD_ROOT}/sdk/cmake.mk")
+set(TOOLS_DIR "${BUILD_ROOT}/sdk/tools")
 set(CMAKE_COMMAND_TO_USE "")
+
+
+# --- Set Default Generator if not defined ---
 
 # --- Logic ---
 
@@ -87,8 +92,9 @@ else()
 
         # --- Unpack ---
         message(STATUS "Unpacking CMake...")
+        get_filename_component(ARCHIVE_FILENAME "${CMAKE_ARCHIVE_PATH}" NAME)
         execute_process(
-            COMMAND "${CMAKE_COMMAND}" -E tar "xf" "${CMAKE_ARCHIVE_PATH}"
+            COMMAND "${CMAKE_COMMAND}" -E tar "xf" "${ARCHIVE_FILENAME}"
             WORKING_DIRECTORY "${TOOLS_DIR}"
             RESULT_VARIABLE unpack_result
             ERROR_VARIABLE unpack_error
@@ -130,13 +136,12 @@ endif()
 # Convert to forward slashes for better portability in the Makefile
 file(TO_CMAKE_PATH "${CMAKE_COMMAND_TO_USE_NATIVE}" CMAKE_COMMAND_TO_USE_NATIVE)
 
-file(WRITE "${CMAKE_MK_FILE}" "CMAKE := \"${CMAKE_COMMAND_TO_USE_NATIVE}\"\n")
+file(WRITE "${CMAKE_MK_FILE_OUT}" "CMAKE := \"${CMAKE_COMMAND_TO_USE_NATIVE}\"\n")
 message(STATUS "Build will use CMake at: ${CMAKE_COMMAND_TO_USE_NATIVE}")
 
 # --- Determine Processor Count ---
-set(NPROC_MK_FILE "${BUILD_ROOT}/sdk/nproc.mk")
 include(ProcessorCount)
 ProcessorCount(CORE_COUNT)
 
-file(WRITE "${NPROC_MK_FILE}" "NPROC := ${CORE_COUNT}\n")
+file(WRITE "${NPROC_MK_FILE_OUT}" "NPROC := ${CORE_COUNT}\n")
 message(STATUS "Parallel builds will use up to ${CORE_COUNT} cores.")

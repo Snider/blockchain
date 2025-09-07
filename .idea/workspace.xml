@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="BackendCodeEditorMiscSettings">
-    <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="49" type="long" />
+    <option name="/Default/Environment/Hierarchy/GeneratedFilesCacheKey/Timestamp/@EntryValue" value="6" type="long" />
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/GlobalSettingsUpgraded/IsUpgraded/@EntryValue" value="true" type="bool" />
     <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppIncludesOrderOptions" type="string" />
@@ -19,41 +19,27 @@
     <option name="reloaded" value="true" />
   </component>
   <component name="CMakeRunConfigurationManager">
-    <generated>
-      <config projectName="Zano" targetName="stratum" />
-      <config projectName="Zano" targetName="common" />
-      <config projectName="Zano" targetName="simplewallet" />
-      <config projectName="Zano" targetName="build_sdk" />
-      <config projectName="Zano" targetName="version" />
-      <config projectName="Zano" targetName="mdbx_stat" />
-      <config projectName="Zano" targetName="wallet" />
-      <config projectName="Zano" targetName="libminiupnpc-static" />
-      <config projectName="Zano" targetName="upnpc-static" />
-      <config projectName="Zano" targetName="zlib" />
-      <config projectName="Zano" targetName="boost_external" />
-      <config projectName="Zano" targetName="mdbx_load" />
-      <config projectName="Zano" targetName="lmdb" />
-      <config projectName="Zano" targetName="connectivity_tool" />
-      <config projectName="Zano" targetName="crypto" />
-      <config projectName="Zano" targetName="mdbx" />
-      <config projectName="Zano" targetName="daemon" />
-      <config projectName="Zano" targetName="mdbx_dump" />
-      <config projectName="Zano" targetName="currency_core" />
-      <config projectName="Zano" targetName="mdbx_copy" />
-      <config projectName="Zano" targetName="icu_external" />
-      <config projectName="Zano" targetName="ethash" />
-      <config projectName="Zano" targetName="zlibstatic" />
-      <config projectName="Zano" targetName="rpc" />
-      <config projectName="Zano" targetName="mdbx_chk" />
-    </generated>
+    <generated />
   </component>
   <component name="CMakeSettings">
     <configurations />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98928ae7-17a0-4cf3-a624-d115607a891b" name="Changes" comment="Add .aiexclude and dependabot configuration for improved dependency management">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/build-windows.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-windows.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gemini/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gemini/settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.aiexclude" beforeDir="false" afterPath="$PROJECT_DIR$/.aiexclude" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/build-macos-arm64.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-macos-arm64.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/build-macos-intel.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/build-macos-intel.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/cmake.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/cmake.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/daemon.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/simplewallet.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake/utils/bootstrap.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake/utils/bootstrap.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake/utils/configure.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/cmake/utils/configure.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,6 +47,13 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug-Ubuntu 24.04" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Dockerfile" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
@@ -126,7 +119,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -141,128 +134,8 @@
       <recent name="C:\Users\snide\CLionProjects\blockchain\cmake-build-release-visual-studio" />
     </key>
   </component>
-  <component name="RunManager" selected="CMake Application.build_sdk">
-    <configuration name="boost_external" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="boost_external" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="build_sdk" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="build_sdk" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="common" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="common" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="connectivity_tool" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="connectivity_tool" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="connectivity_tool">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="crypto" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="crypto" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="currency_core" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="currency_core" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="daemon" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="daemon" CONFIG_NAME="Debug-WSL" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="daemon">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="ethash" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="ethash" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="icu_external" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="icu_external" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="libminiupnpc-static" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="libminiupnpc-static" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="lmdb" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="lmdb" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx_chk" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx_chk" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="mdbx_chk">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx_copy" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx_copy" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="mdbx_copy">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx_dump" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx_dump" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="mdbx_dump">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx_load" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx_load" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="mdbx_load">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="mdbx_stat" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="mdbx_stat" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="mdbx_stat">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="rpc" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="rpc" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="simplewallet" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="simplewallet" CONFIG_NAME="Debug-WSL" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="simplewallet">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="stratum" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="stratum" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="upnpc-static" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="upnpc-static" CONFIG_NAME="Debug-Ubuntu 24.04" RUN_TARGET_PROJECT_NAME="Zano" RUN_TARGET_NAME="upnpc-static">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="version" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="version" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="wallet" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="wallet" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="zlib" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="zlib" CONFIG_NAME="Debug-Ubuntu 24.04">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="zlibstatic" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Zano" TARGET_NAME="zlibstatic" CONFIG_NAME="Debug-Ubuntu 24.04">
+  <component name="RunManager" selected="Makefile Target.dev-build">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -292,37 +165,12 @@
       <method v="2" />
     </configuration>
     <configuration name="help" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/Makefile" target="help" workingDirectory="" arguments="">
+      <makefile filename="%pr/Makefile" target="help" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="CMake Application.boost_external" />
-      <item itemvalue="CMake Application.build_sdk" />
-      <item itemvalue="CMake Application.icu_external" />
-      <item itemvalue="CMake Application.version" />
-      <item itemvalue="CMake Application.lmdb" />
-      <item itemvalue="CMake Application.mdbx" />
-      <item itemvalue="CMake Application.mdbx_chk" />
-      <item itemvalue="CMake Application.mdbx_copy" />
-      <item itemvalue="CMake Application.mdbx_dump" />
-      <item itemvalue="CMake Application.mdbx_load" />
-      <item itemvalue="CMake Application.mdbx_stat" />
-      <item itemvalue="CMake Application.ethash" />
-      <item itemvalue="CMake Application.libminiupnpc-static" />
-      <item itemvalue="CMake Application.upnpc-static" />
-      <item itemvalue="CMake Application.zlib" />
-      <item itemvalue="CMake Application.zlibstatic" />
-      <item itemvalue="CMake Application.common" />
-      <item itemvalue="CMake Application.connectivity_tool" />
-      <item itemvalue="CMake Application.crypto" />
-      <item itemvalue="CMake Application.currency_core" />
-      <item itemvalue="CMake Application.daemon" />
-      <item itemvalue="CMake Application.rpc" />
-      <item itemvalue="CMake Application.simplewallet" />
-      <item itemvalue="CMake Application.stratum" />
-      <item itemvalue="CMake Application.wallet" />
       <item itemvalue="Makefile Target.build" />
       <item itemvalue="Makefile Target.clean-dev" />
       <item itemvalue="Makefile Target.configure" />
@@ -331,11 +179,11 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Makefile Target.clean-dev" />
         <item itemvalue="Makefile Target.dev-build" />
+        <item itemvalue="Makefile Target.clean-dev" />
+        <item itemvalue="Makefile Target.configure" />
         <item itemvalue="Makefile Target.help" />
         <item itemvalue="Makefile Target.build" />
-        <item itemvalue="Makefile Target.configure" />
       </list>
     </recent_temporary>
   </component>
@@ -367,7 +215,9 @@
       <workItem from="1756586856576" duration="9059000" />
       <workItem from="1756765629448" duration="6413000" />
       <workItem from="1756772092749" duration="13576000" />
-      <workItem from="1756788900396" duration="1105000" />
+      <workItem from="1756788900396" duration="1751000" />
+      <workItem from="1756790675668" duration="4931000" />
+      <workItem from="1756804202163" duration="10322000" />
     </task>
     <task id="LOCAL-00001" summary="Updates to QT6!">
       <option name="closed" value="true" />
