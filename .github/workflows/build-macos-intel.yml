@@ -13,11 +13,6 @@ on:
         default: true
         required: false
         type: boolean
-      build-gui:
-        description: "Should the GUI be built"
-        default: true
-        required: false
-        type: boolean
       release:
         description: "Make a release"
         default: true
@@ -36,7 +31,7 @@ jobs:
           submodules: recursive
 
       - name: install dependencies
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install ccache miniupnpc
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc
 
       - name: Cache OpenSSL
         id: cache-openssl
@@ -44,24 +39,6 @@ jobs:
         with:
           path: ${{ github.workspace }}/build/openssl
           key: openssl-${{ runner.os }}-intel
-
-      - name: ccache caching
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/build/ccache
-          key: ccache-${{ inputs.chain-network }}-${{ runner.os }}-intel
-
-      - name: Install Qt
-        if: ${{ inputs.build-gui }}
-        uses: jurplel/install-qt-action@v3
-        with:
-          dir: '${{ github.workspace }}/build/qt/'
-          aqtversion: '==3.1.*'
-          version: '6.8.3'
-          host: 'mac'
-          target: 'desktop'
-          arch: 'clang_64'
-          modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
 
       - name: Build OpenSSL
         if: steps.cache-openssl.outputs.cache-hit != 'true'
@@ -75,12 +52,9 @@ jobs:
           make -j3 && make install_sw install_ssldirs && cd ..
           rm -rf openssl-1.1.1w/
 
-      - name: Build SDK via Makefile
-        run: make build_sdk BUILD_TYPE=Release
-
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        run: make build BUILD_TYPE=Release STATIC_BUILD=ON
+        run: make build BUILD_TYPE=Release
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
@@ -94,20 +68,4 @@ jobs:
             simplewallet
             connectivity_tool
           asset-type: 'cli'
-          asset-directory: ${{ github.workspace }}/build/release/src
-
-      - name: Build GUI
-        if: ${{ inputs.build-gui }}
-        run: make build BUILD_TYPE=Release BUILD_GUI=ON TARGETS="Zano"
-
-      - name: GUI Artifacts
-        if: ${{ inputs.build-gui }}
-        uses: ./.github/actions/sign-and-upload-release
-        with:
-          chain-network: ${{ inputs.chain-network }}
-          release-tag: ${{ github.ref_name }}
-          release: "${{ inputs.release }}"
-          assets: |
-            Zano.app
-          asset-type: 'gui'
           asset-directory: ${{ github.workspace }}/build/release/src

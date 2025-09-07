@@ -13,11 +13,6 @@ on:
         default: true
         required: false
         type: boolean
-      build-gui:
-        description: "Should the GUI be built"
-        default: true
-        required: false
-        type: boolean
       release:
         description: "Make a release"
         default: true
@@ -35,39 +30,9 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: ccache caching
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/build/ccache
-          key: ccache-${{ inputs.chain-network }}-${{ runner.os }}
-
-      - name: Install Qt
-        if: ${{ inputs.build-gui }}
-        uses: jurplel/install-qt-action@v3
-        with:
-          dir: '${{ github.workspace }}/build/qt/'
-          aqtversion: '==3.1.*'
-          version: '6.8.3'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2022_64'
-          modules: 'qt5compat qtwebengine qtwebchannel qtpositioning'
-
-      - name: Build SDK via Makefile
-        run: make build-cli BUILD_TYPE=Release STATIC_BUILD=ON
-#        run: make build_sdk BUILD_TYPE=Release STATIC_BUILD=OFF
-
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'daemon simplewallet connectivity_tool'
-          static: 'false'
-          generator: 'Visual Studio 17 2022'
-          arch: 'x86-64'
+        run: make build BUILD_TYPE=Release
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
@@ -81,28 +46,4 @@ jobs:
             simplewallet.exe
             connectivity_tool.exe
           asset-type: 'cli'
-          asset-directory: ${{ github.workspace }}\build\release\src\Release
-
-      - name: Build GUI
-        if: ${{ inputs.build-gui }}
-        uses: ./.github/actions/cmake-build
-        with:
-          jobs: '4'
-          build-type: 'Release'
-          chain-network: ${{ inputs.chain-network }}
-          target: 'Zano'
-          build-gui: 'true'
-          generator: 'Visual Studio 17 2022'
-          arch: 'x86-64'
-
-      - name: GUI Artifacts
-        if: ${{ inputs.build-gui }}
-        uses: ./.github/actions/sign-and-upload-release
-        with:
-          chain-network: ${{ inputs.chain-network }}
-          release-tag: ${{ github.ref_name }}
-          release: "${{ inputs.release }}"
-          assets: |
-            Zano.exe
-          asset-type: 'gui'
           asset-directory: ${{ github.workspace }}\build\release\src\Release
