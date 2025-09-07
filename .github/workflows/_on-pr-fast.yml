@@ -25,14 +25,12 @@ jobs:
     with:
       chain-network: ${{ github.ref_name == 'main' && 'mainnet' || 'testnet' }}
       release: false
-      build-gui: false
   build-macos-intel:
     name: Compile
     uses: ./.github/workflows/build-macos-intel.yml
     with:
       chain-network: ${{ github.ref_name == 'main' && 'mainnet' || 'testnet' }}
       release: false
-      build-gui: false
 
   build-linux:
     name: Compile
@@ -40,7 +38,6 @@ jobs:
     with:
       chain-network: ${{ github.ref_name == 'main' && 'mainnet' || 'testnet' }}
       release: false
-      build-gui: false
 
   build-windows:
     name: Compile
