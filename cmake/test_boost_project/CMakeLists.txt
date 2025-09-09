@@ -17,6 +17,9 @@ string(REPLACE "|" ";" REQUIRED_COMPONENTS "${TEST_COMPONENTS_STRING}")
 # Adding the EXACT version makes the request more specific and robust.
 find_package(Boost ${TEST_BOOST_VERSION} EXACT CONFIG REQUIRED COMPONENTS ${REQUIRED_COMPONENTS})
 
+# Find ICU libraries
+find_package(ICU REQUIRED COMPONENTS data i18n uc)
+
 add_executable(run_test main.cpp)
 
 # Link against all the found Boost libraries
@@ -32,6 +35,9 @@ endforeach()
 if(TARGET Boost::headers)
     target_link_libraries(run_test PRIVATE Boost::headers)
 endif()
+
+# Link against ICU libraries
+target_link_libraries(run_test PRIVATE ICU::data ICU::uc ICU::i18n)
 
 # Add preprocessor definitions for optional components
 if("locale" IN_LIST REQUIRED_COMPONENTS)

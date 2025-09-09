@@ -81,3 +81,6 @@ dkms.conf
 
 .gemini/
 gha-creds-*.json
+/.idea/copilot.data.migration.agent.xml
+/.idea/copilot.data.migration.edit.xml
+/.idea/.name
