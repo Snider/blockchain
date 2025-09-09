@@ -357,13 +357,15 @@ target_link_libraries(zano_boost_libs INTERFACE ${Boost_LIBRARIES})
 
 # If ICU was built, link it to the main boost interface library.
 if(TARGET ICU::i18n)
-    target_get_property(icu_include_dir ICU::i18n INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(icu_include_dir ICU::i18n INTERFACE_INCLUDE_DIRECTORIES)
     if(icu_include_dir)
         target_include_directories(zano_boost_libs INTERFACE ${icu_include_dir})
     endif()
     target_link_libraries(zano_boost_libs INTERFACE ICU::i18n ICU::uc ICU::data)
     if(NOT APPLE) # Linux needs 'dl' for ICU
         target_link_libraries(zano_boost_libs INTERFACE dl)
+    else() # Apple needs 'iconv' for Boost.Locale
+        target_link_libraries(zano_boost_libs INTERFACE iconv)
     endif()
 endif()
 

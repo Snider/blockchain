@@ -6,13 +6,11 @@ if(APPLE)
     # On Apple platforms, the architecture must be defined before other modules
     # that might depend on it.
     if(NOT CMAKE_OSX_ARCHITECTURES)
-        # If the user has not specified an architecture, we detect the host.
-        # On Apple Silicon, we default to 'arm64' to avoid potential codesigning
-        # issues with 'arm64e' during configure steps of external libraries.
         string(TOLOWER "${CMAKE_HOST_SYSTEM_PROCESSOR}" HOST_ARCH)
-        if(HOST_ARCH STREQUAL "arm64" OR HOST_ARCH STREQUAL "arm64e")
+        if(HOST_ARCH STREQUAL "arm64")
             message(STATUS "Host is Apple Silicon, defaulting CMAKE_OSX_ARCHITECTURES to arm64 for compatibility.")
             set(CMAKE_OSX_ARCHITECTURES "arm64")
+            set(CXX_EXTENSIONS OFF)
         else()
             message(STATUS "Defaulting CMAKE_OSX_ARCHITECTURES to ${HOST_ARCH}")
             set(CMAKE_OSX_ARCHITECTURES "${HOST_ARCH}")
@@ -24,10 +22,10 @@ if(APPLE)
     # Explicitly pass the target architecture to the compiler and linker.
     # While CMAKE_OSX_ARCHITECTURES is the modern way, passing the flags
     # directly is more robust for some external projects.
-    set(ARCH_FLAG "-arch ${CMAKE_OSX_ARCHITECTURES}")
-    set(ARCH_C_FLAGS "${ARCH_FLAG}")
-    set(ARCH_CXX_FLAGS "${ARCH_FLAG}")
-    set(ARCH_LINKER_FLAGS "${ARCH_FLAG}")
+#    set(ARCH_FLAG "-arch ${CMAKE_OSX_ARCHITECTURES}")
+#    set(ARCH_C_FLAGS "${ARCH_FLAG}")
+#    set(ARCH_CXX_FLAGS "${ARCH_FLAG}")
+#    set(ARCH_LINKER_FLAGS "${ARCH_FLAG}")
 
 elseif(NOT MSVC)
     # For non-MSVC builds (like GCC and Clang on Linux), allow specifying the
