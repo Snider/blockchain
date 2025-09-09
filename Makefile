@@ -157,7 +157,7 @@ gui-static: ## Build a static release version with GUI.
 	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=ON BUILD_TESTS=OFF STATIC_BUILD=ON
 
 test: bootstrap-cmake ## Run tests on the most recently built configuration.
-	@$(CMAKE) -P cmake/utils/run_tests.cmake
+	@$(CMAKE) -P cmake/utils/libs/run_tests.cmake
 
 test-release: ## Build a release version and run tests.
 	@$(MAKE) dev-build BUILD_TYPE=Release BUILD_GUI=OFF BUILD_TESTS=ON STATIC_BUILD=OFF

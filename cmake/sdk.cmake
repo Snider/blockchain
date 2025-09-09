@@ -5,7 +5,7 @@ include_guard(GLOBAL)
 # Boost, etc.) are properly configured and built before the main project.
 
 # --- OpenSSL Dependency ---
-include(OpenSSL)
+include(libs/OpenSSL)
 
 # --- Boost Dependency ---
 # Define the list of required Boost components for the project.
@@ -25,7 +25,7 @@ set(BOOST_VERSION "1.86.0" CACHE STRING "The version of Boost to download and bu
 
 # This script will find or prepare the Boost dependency and define the necessary
 # Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
-include(Boost)
+include(libs/Boost)
 
 # The include(Boost) script will FATAL_ERROR if it cannot satisfy the dependency.
 # So, we can assume Boost_FOUND is TRUE after this point.

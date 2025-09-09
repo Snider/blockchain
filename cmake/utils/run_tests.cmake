@@ -1,4 +1,4 @@
-# C:/Users/snide/CLionProjects/snider/blockchain/cmake/run_tests.cmake
+# C:/Users/snide/CLionProjects/snider/blockchain/cmake/utils/run_tests.cmake
 #
 # Reads the last build directory from build/.last_build_dir and runs the 'test' target.
 # Cross-platform replacement for the shell logic in the 'test' make target.

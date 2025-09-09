@@ -1,7 +1,7 @@
 include_guard(GLOBAL) # Prevent multiple inclusions
 
 include(ExternalProject)
-include(BoostUrls)
+include(libs/BoostUrls)
 
 # --- Configuration ---
 # These variables can be set by the parent scope to override defaults.
@@ -164,7 +164,7 @@ if(NOT FORCE_BUILD_BOOST)
         else()
             file(MAKE_DIRECTORY ${SDK_CACHE_DIR})
             set(BOOST_CACHE_FILE "${SDK_CACHE_DIR}/${BOOST_CACHE_FILENAME}")
- 
+
             message(STATUS "Attempting to download pre-compiled Boost for ${PLATFORM_ID} from ${BOOST_CACHE_URL}")
             # The standard file(DOWNLOAD) command issues a FATAL_ERROR on failure, which prevents
             # a graceful fallback to a source build. We use execute_process with cmake -E download
@@ -185,7 +185,7 @@ if(NOT FORCE_BUILD_BOOST)
                     file(REMOVE ${BOOST_CACHE_FILE}) # Clean up bad download
                 endif()
             endif()
- 
+
             if(DOWNLOAD_RESULT EQUAL 0)
                 execute_process(
                     COMMAND ${CMAKE_COMMAND} -E tar xzf ${BOOST_CACHE_FILE}
@@ -304,11 +304,11 @@ set(BOOST_SHA256 ${BOOST_VERSION_${BOOST_VERSION_SUFFIX}_SHA256})
 set(BOOST_URL ${BOOST_VERSION_${BOOST_VERSION_SUFFIX}_URLS}) # Use the list of URLs
 
 if(NOT BOOST_BUILD_SYSTEM)
-    message(FATAL_ERROR "Boost version ${BOOST_VERSION} is not defined in the database in cmake/BoostUrls.cmake. Please add it.")
+    message(FATAL_ERROR "Boost version ${BOOST_VERSION} is not defined in the database in cmake/libs/BoostUrls.cmake. Please add it.")
 endif()
 
 if(NOT BOOST_URL)
-    message(FATAL_ERROR "Source URLs for Boost version ${BOOST_VERSION} are not defined in the database in cmake/BoostUrls.cmake. Please add them.")
+    message(FATAL_ERROR "Source URLs for Boost version ${BOOST_VERSION} are not defined in the database in cmake/libs/BoostUrls.cmake. Please add them.")
 endif()
 
 if(_BUILD_BOOST_FROM_SOURCE)

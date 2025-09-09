@@ -1,7 +1,7 @@
 include_guard(GLOBAL)
 
 include(ExternalProject)
-include(OpenSSLUrls)
+include(libs/OpenSSLUrls)
 
 # --- Configuration ---
 if(NOT DEFINED OPENSSL_VERSION)
