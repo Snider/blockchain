@@ -14,6 +14,7 @@ set(BOOST_CMAKE_ARGS
     -DBUILD_TESTING=OFF
     # Use the standard BUILD_SHARED_LIBS to control static/shared builds.
     -DBUILD_SHARED_LIBS=OFF
+    -DCMAKE_POLICY_DEFAULT_CMP0077=NEW # Required by Boost's CMake for modern behavior
 )
 
 # Pass the list of required libraries via the BUILD_LIBS variable, as a
@@ -35,15 +36,15 @@ if(ICU_ROOT)
 endif()
 
 # Append architecture-specific flags from arch.cmake
-if(ARCH_C_FLAGS)
-    set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} ${ARCH_C_FLAGS}")
-endif()
-if(ARCH_CXX_FLAGS)
-    set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} ${ARCH_CXX_FLAGS}")
-endif()
-if(ARCH_LINKER_FLAGS)
-    set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} ${ARCH_LINKER_FLAGS}")
-endif()
+#if(ARCH_C_FLAGS)
+#    set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} ${ARCH_C_FLAGS}")
+#endif()
+#if(ARCH_CXX_FLAGS)
+#    set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} ${ARCH_CXX_FLAGS}")
+#endif()
+#if(ARCH_LINKER_FLAGS)
+#    set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} ${ARCH_LINKER_FLAGS}")
+#endif()
 
 # Explicitly forward the compilers to ensure the external project uses the same ones.
 # This improves robustness, especially in complex or non-standard environments.
@@ -195,9 +196,9 @@ ExternalProject_Add(
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG> --parallel ${BOOST_JOBS}
     INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --config $<CONFIG>
 
-    LOG_CONFIGURE 1
-    LOG_BUILD 1
-    LOG_INSTALL 1
+    LOG_CONFIGURE 0
+    LOG_BUILD 0
+    LOG_INSTALL 0
 
     # --- Verification Step ---
     # After installation, run a small test project to verify that the new Boost
