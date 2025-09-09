@@ -135,26 +135,27 @@ endif()
 add_library(rpc ${RPC})
 add_dependencies(rpc version ${PCH_LIB_NAME})
 ENABLE_SHARED_PCH(rpc)
+target_link_libraries(rpc PUBLIC Zano::boost_libs)
 
 add_library(stratum ${STRATUM})
 add_dependencies(stratum version ${PCH_LIB_NAME})
 ENABLE_SHARED_PCH(stratum)
 
 
-target_link_libraries(currency_core lmdb mdbx)
+target_link_libraries(currency_core lmdb mdbx Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 
 add_executable(daemon ${DAEMON} ${P2P} ${CURRENCY_PROTOCOL})
-add_dependencies(daemon version)
+add_dependencies(daemon version build_sdk)
 target_link_libraries(daemon rpc stratum currency_core crypto common libminiupnpc-static zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 ENABLE_SHARED_PCH(daemon)
                      
 add_executable(connectivity_tool ${CONN_TOOL})
-add_dependencies(connectivity_tool version)
+add_dependencies(connectivity_tool version build_sdk)
 target_link_libraries(connectivity_tool currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 ENABLE_SHARED_PCH(connectivity_tool)
 
 add_executable(simplewallet ${SIMPLEWALLET})
-add_dependencies(simplewallet version)
+add_dependencies(simplewallet version build_sdk)
 target_link_libraries(simplewallet wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 
 ENABLE_SHARED_PCH(simplewallet)
@@ -182,7 +183,7 @@ if(BUILD_GUI)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
   SET(MACOSX_BUNDLE_ICON_FILE app.icns)
   add_executable(Zano WIN32 MACOSX_BUNDLE ${QTDAEMON} )
-  add_dependencies(Zano)
+  add_dependencies(Zano version build_sdk)
   target_link_libraries(Zano wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto Qt6::Core5Compat Qt6::Widgets Qt6::WebEngineWidgets Qt6::WebChannel Qt6::PrintSupport)
   ENABLE_SHARED_PCH(Zano)
 	  

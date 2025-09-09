@@ -2,10 +2,8 @@ cmake_minimum_required(VERSION 3.26.3)
 
 PROJECT(Zano)
 set(VERSION "1.0")
-
-message("OPENSSL_INCLUDE_DIR: ${OPENSSL_INCLUDE_DIR}")
-message("OPENSSL_CRYPTO_LIBRARY: ${OPENSSL_CRYPTO_LIBRARY}")
-message("OPENSSL_SSL_LIBRARY: ${OPENSSL_SSL_LIBRARY}")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(INSERT CMAKE_MODULE_PATH 0
         "${CMAKE_SOURCE_DIR}/cmake")
@@ -15,6 +13,16 @@ include(Policy)
 # The arch module centralizes architecture detection and flag setting.
 # It should be included early, especially on Apple platforms.
 include(arch)
+
+# --- SDK Build Target ---
+# This custom target serves as an umbrella for all dependency builds.
+# The individual dependency scripts (e.g., OpenSSL.cmake, Boost.cmake)
+# will add their external project targets as dependencies to this target.
+add_custom_target(build_sdk COMMENT "Building all bundled SDK dependencies (e.g., OpenSSL, Boost)...")
+
+# --- SDK Dependencies ---
+# This includes all external dependencies like OpenSSL and Boost.
+include(sdk)
 
 # On Apple platforms, define deployment target and other settings.
 if(APPLE)
@@ -67,10 +75,6 @@ if(APPLE)
   set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(ZANO_BOOST_MIN_VER 1.84)
-
 
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   add_definitions(-DMOBILE_WALLET_BUILD)
@@ -99,9 +103,6 @@ endif()
 message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}, and built type: ${CMAKE_BUILD_TYPE}")
 
 enable_testing()
-
-set(OPENSSL_USE_STATIC_LIBS TRUE) # link statically
-find_package(OpenSSL REQUIRED)
 
 set(USE_PCH FALSE CACHE BOOL "Use shared precompiled headers")
 set(DISABLE_TOR FALSE CACHE BOOL "Disable TOR library(and related tor-connect submodule)")
@@ -149,7 +150,10 @@ else()
   endif()
 endif()
 
-include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include ${OPENSSL_INCLUDE_DIR} "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
+# The version target should depend on the entire SDK being built.
+add_dependencies(version build_sdk)
+
+include_directories(src contrib/eos_portable_archive contrib contrib/epee/include contrib/jwt-cpp/include "${CMAKE_BINARY_DIR}/version" "${CMAKE_BINARY_DIR}/contrib/zlib")
 
 if(TESTNET)
   message("!!!!!! NOTICE: Project is building for TESTNET !!!!!!")  
@@ -295,41 +299,7 @@ if(STATIC)
   set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")    
-
-# --- Boost Dependency ---
-# This section handles finding, downloading, or building the Boost dependency.
-# It encapsulates all the logic within the included 'Boost.cmake' script.
-
-# Define the list of required Boost components for the project.
-set(ZANO_BOOST_COMPONENTS "filesystem;thread;timer;date_time;chrono;regex;serialization;atomic;program_options")
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
-  list(APPEND ZANO_BOOST_COMPONENTS locale)
-endif()
-if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
-  list(APPEND ZANO_BOOST_COMPONENTS log log_setup)
-endif()
-
-# Pass the required components to the build script.
-set(BOOST_LIBS_TO_BUILD "system;${ZANO_BOOST_COMPONENTS}")
-
-# Optionally set the Boost version. The default is handled by Boost.cmake.
-set(BOOST_VERSION "1.86.0" CACHE STRING "The version of Boost to download and build")
-
-# This script will find or prepare the Boost dependency and define the necessary
-# Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
-include(Boost)
-
-# The include(Boost) script will FATAL_ERROR if it cannot satisfy the dependency.
-# So, we can assume Boost_FOUND is TRUE after this point.
-message(STATUS "Using Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
-
-# Now that Boost has been found or built, add its include directory to the global path.
-# The SYSTEM keyword can sometimes have unintended side effects in complex builds.
-# Using a regular include path is more direct and ensures it's added to the search path,
-# even if it may produce warnings from the library headers. This resolves issues where
-# the path isn't correctly propagated to all targets.
-include_directories(${Boost_INCLUDE_DIRS})
+message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application

@@ -23,6 +23,12 @@ if(ICU_ROOT)
     list(APPEND B2_ARGS "-sICU_PATH=${ICU_ROOT}")
 endif()
 
+# If OpenSSL was built, provide its paths to the b2 build.
+if(TARGET OpenSSL::SSL)
+    list(APPEND B2_ARGS "-sOPENSSL_INCLUDE=${OPENSSL_INSTALL_PREFIX}/include")
+    list(APPEND B2_ARGS "-sOPENSSL_LIBPATH=${OPENSSL_INSTALL_PREFIX}/lib")
+endif()
+
 # Forward the C++ standard.
 if(CMAKE_CXX_STANDARD)
     list(APPEND B2_ARGS "cxxstd=${CMAKE_CXX_STANDARD}")

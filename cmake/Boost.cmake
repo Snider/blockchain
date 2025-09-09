@@ -222,11 +222,14 @@ set(_BUILD_BOOST_FROM_SOURCE TRUE)
 
 # --- Build from Source (if not found in cache) ---
 
+# Boost may have other dependencies (e.g. ICU, OpenSSL). We define them here.
+# Boost.Asio with SSL support requires OpenSSL.
+set(BOOST_EXTRA_DEPS OpenSSL::SSL OpenSSL::Crypto)
+set(ICU_ROOT "")
+
 # --- ICU Dependency Build (if locale is requested) ---
 # If boost_locale is needed, we must first build ICU. This is done as a separate
 # external project that the main Boost build will depend on.
-set(BOOST_EXTRA_DEPS "")
-set(ICU_ROOT "")
 list(FIND BOOST_LIBS_TO_BUILD "locale" LOCALE_INDEX)
 if(NOT LOCALE_INDEX EQUAL -1)
     message(STATUS "Boost 'locale' component requested, preparing to build ICU dependency.")
@@ -260,7 +263,7 @@ if(NOT LOCALE_INDEX EQUAL -1)
         INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
     )
 
-    set(BOOST_EXTRA_DEPS icu_external)
+    list(APPEND BOOST_EXTRA_DEPS icu_external)
 
     # For static builds on non-MSVC platforms, Boost.Locale requires ICU.
     # Create imported targets for the ICU libraries. This is the modern CMake way
@@ -355,6 +358,13 @@ if(NOT TARGET Zano::boost_libs)
 endif()
 target_link_libraries(zano_boost_libs INTERFACE ${Boost_LIBRARIES})
 
+# If OpenSSL is available, link it to the main boost interface library.
+# This ensures that any target linking against Boost also gets the OpenSSL
+# include paths and libraries, which is required by Boost.Asio.SSL.
+if(TARGET OpenSSL::SSL)
+    target_link_libraries(zano_boost_libs INTERFACE OpenSSL::SSL)
+endif()
+
 # If ICU was built, link it to the main boost interface library.
 if(TARGET ICU::i18n)
     get_target_property(icu_include_dir ICU::i18n INTERFACE_INCLUDE_DIRECTORIES)
@@ -372,10 +382,7 @@ endif()
 add_dependencies(zano_boost_libs boost_external)
 
 
-add_custom_target(build_sdk DEPENDS boost_external
-                  COMMENT "Building all bundled SDK dependencies (e.g., Boost)...")
-
-add_dependencies(version boost_external)
+add_dependencies(build_sdk boost_external)
 
 set(Boost_FOUND TRUE)
 foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})

@@ -35,6 +35,13 @@ if(ICU_ROOT)
     set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} -L${ICU_ROOT}/lib")
 endif()
 
+# If OpenSSL was found and built by our scripts, pass its location to Boost.
+# This is crucial for Boost.Asio's SSL support. Boost's FindOpenSSL module
+# respects the OPENSSL_ROOT_DIR variable.
+if(TARGET OpenSSL::SSL)
+    list(APPEND BOOST_CMAKE_ARGS "-DOPENSSL_ROOT_DIR=${OPENSSL_INSTALL_PREFIX}")
+endif()
+
 # Append architecture-specific flags from arch.cmake
 #if(ARCH_C_FLAGS)
 #    set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} ${ARCH_C_FLAGS}")
