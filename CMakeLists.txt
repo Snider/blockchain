@@ -18,7 +18,35 @@ include(arch)
 
 # On Apple platforms, define deployment target and other settings.
 if(APPLE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+  # Set deployment target based on build type
+  if(STATIC)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+  else()
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+  endif()
+
+  # Define SDK folder name and expose variables to Makefile
+  if(CMAKE_OSX_ARCHITECTURES)
+    string(REPLACE ";" "-" SDK_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+  else()
+    # Fallback to current architecture if not specified
+    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm|aarch64")
+      set(SDK_ARCHS "arm64")
+    else()
+      set(SDK_ARCHS "x86_64")
+    endif()
+  endif()
+
+  string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" COMPILER_ID_LOWER)
+  string(REGEX REPLACE "\\..*" "" DEPLOYMENT_TARGET_MAJOR "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  set(ZANO_SDK_SUBDIR "${COMPILER_ID_LOWER}-${DEPLOYMENT_TARGET_MAJOR}-${SDK_ARCHS}")
+  set(ZANO_SDK_DIR "sdk/${ZANO_SDK_SUBDIR}" CACHE STRING "Zano SDK directory")
+
+  # Create a file for the Makefile to include
+  set(MAKEFILE_VARS_FILE "${CMAKE_BINARY_DIR}/macos_build_vars.mk")
+  file(WRITE ${MAKEFILE_VARS_FILE} "CMAKE_OSX_DEPLOYMENT_TARGET:=${CMAKE_OSX_DEPLOYMENT_TARGET}\n")
+  file(APPEND ${MAKEFILE_VARS_FILE} "ZANO_SDK_DIR:=${ZANO_SDK_DIR}\n")
+  message(STATUS "Generated Makefile variables in ${MAKEFILE_VARS_FILE}")
 
   # On Apple platforms, we need to explicitly set the SDK path (sysroot) to
   # ensure that the correct headers and libraries are found, especially for
