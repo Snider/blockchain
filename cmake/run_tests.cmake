@@ -1,9 +1,9 @@
 # C:/Users/snide/CLionProjects/snider/blockchain/cmake/run_tests.cmake
 #
-# Reads the last build directory from .last_build_dir and runs the 'test' target.
+# Reads the last build directory from build/.last_build_dir and runs the 'test' target.
 # Cross-platform replacement for the shell logic in the 'test' make target.
 
-set(LAST_BUILD_FILE ".last_build_dir")
+set(LAST_BUILD_FILE "build/.last_build_dir")
 
 if(NOT EXISTS "${LAST_BUILD_FILE}")
     message(FATAL_ERROR "Error: No build has been run. Use 'make release' or 'make debug' first.")

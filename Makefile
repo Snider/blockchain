@@ -1,7 +1,7 @@
 # Modern Makefile for the project.
 # Provides a streamlined development workflow using cmake instead of shell functions for cross-platform compatibility..
 
- .PHONY: help all dev-build build build-sdk clean clean-dev configure release debug \
+ .PHONY: help all dev-build build build-sdk clean clean-build configure release debug \
          gui gui-release gui-debug static static-release gui-static package-boost \
          test test-release test-debug tags debug-configure
 
@@ -13,7 +13,7 @@
 BUILD_TYPE ?= Release
 BUILD_GUI ?= OFF
 BUILD_TESTS ?= OFF
-STATIC_BUILD ?= OFF
+STATIC_BUILD ?= ON
 TESTNET ?= OFF
 DISABLE_TOR ?= ON
 DEFAULT_BUILD_TARGET ?= all
@@ -38,7 +38,7 @@ NPROC_MK := $(BUILD_ROOT)/$(SDK_DIR_NAME)/nproc.mk
 
 # The build directory is determined by configure.cmake.
 # We include the result here so other targets can use it.
--include .build_dir_for_make
+-include build/.build_dir_for_make
 
 # If NPROC is not defined after including the file, default to 1.
 NPROC ?= 1
@@ -121,7 +121,7 @@ clean: bootstrap-cmake ## DANGEROUS: Deletes the entire build directory, includi
 
 # Clean build artifacts but preserve the SDK cache.
 clean-build: bootstrap-cmake ## Clean build artifacts but preserve the cached SDK.
-	@$(CMAKE) -E rm -f .build_dir_for_make .last_build_dir
+	@$(CMAKE) -E rm -f build/.build_dir_for_make build/.last_build_dir
 	@$(CMAKE) -E echo "--- Cleaning build artifacts, preserving SDK in $(BUILD_ROOT)/$(SDK_DIR_NAME) ---"
 	@$(CMAKE) -E make_directory $(BUILD_ROOT)
 	@$(CMAKE) -D CLEAN_DIR=$(BUILD_ROOT) -D PRESERVE_NAME=$(SDK_DIR_NAME) -P cmake/utils/clean_except.cmake

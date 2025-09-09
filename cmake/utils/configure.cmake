@@ -66,6 +66,6 @@ if(NOT CMAKE_RESULT EQUAL 0)
 endif()
 
 # --- Save Build Directory for Make and Tests ---
-file(WRITE ".build_dir_for_make" "BUILD_DIR_FOR_MAKE := ${BUILD_DIR}\n")
-file(WRITE ".last_build_dir" "${BUILD_DIR}")
+file(WRITE "build/.build_dir_for_make" "BUILD_DIR_FOR_MAKE := ${BUILD_DIR}\n")
+file(WRITE "build/.last_build_dir" "${BUILD_DIR}")
 message(STATUS "Configuration successful.")
