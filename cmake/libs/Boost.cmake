@@ -21,28 +21,47 @@ set(PRECOMPILED_CACHE_URL "https://github.com/letheanVPN/blockchain/releases/dow
 
 # --- Platform and SDK Path Calculation ---
 # This logic is encapsulated here to determine the unique path for the SDK.
-string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _COMPILER_ID)
-if(_COMPILER_ID STREQUAL "gnu")
-    set(_COMPILER_ID "gcc")
+if(NOT PLATFORM_ID)
+    string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" _COMPILER_ID)
+    if(_COMPILER_ID STREQUAL "gnu")
+        set(_COMPILER_ID "gcc")
+    endif()
+
+    # Add compiler version
+    if(MSVC)
+        set(_COMPILER_VERSION "${MSVC_VERSION}")
+    elseif (APPLE)
+        set(_COMPILER_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    else()
+        # For others like clang, gcc, appleclang, get major version
+        string(REGEX MATCH "^[0-9]+" _COMPILER_VERSION "${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+
+    if(APPLE)
+        # On Apple platforms, the architecture is a critical part of the platform ID.
+        if(CMAKE_OSX_ARCHITECTURES)
+            set(_PLATFORM_ARCH "${CMAKE_OSX_ARCHITECTURES}")
+        else()
+            # Fallback for older setups or if not explicitly set.
+            string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
+        endif()
+    else()
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+            set(_PLATFORM_ARCH "x64")
+        else()
+            string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
+        endif()
+    endif()
+
+    if(BUILD_SHARED_LIBS)
+        set(_LINK_TYPE "shared")
+    else()
+        set(_LINK_TYPE "static")
+    endif()
+
+    set(PLATFORM_ID "${_COMPILER_ID}-${_COMPILER_VERSION}-${_PLATFORM_ARCH}-${_LINK_TYPE}")
 endif()
 
-if(APPLE)
-    # On Apple platforms, the architecture is a critical part of the platform ID.
-    if(CMAKE_OSX_ARCHITECTURES)
-        set(_PLATFORM_ARCH "${CMAKE_OSX_ARCHITECTURES}")
-    else()
-        # Fallback for older setups or if not explicitly set.
-        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
-    endif()
-else()
-    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-        set(_PLATFORM_ARCH "x64")
-    else()
-        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
-    endif()
-endif()
-
-set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
 message(STATUS "[Boost.cmake] Determined Platform ID: ${PLATFORM_ID}")
 message(STATUS "[Boost.cmake] CMAKE_OSX_ARCHITECTURES is set to: ${CMAKE_OSX_ARCHITECTURES}")
 
@@ -79,12 +98,28 @@ file(MAKE_DIRECTORY "${BOOST_INSTALL_PREFIX}/include" "${BOOST_INSTALL_PREFIX}/l
 # directories into a single target (e.g., Boost::system), which simplifies linking
 # for the rest of the project. These targets point to where the libraries *will*
 # be after they are built or extracted from a cache.
-if(MSVC)
-    set(_boost_static_lib_prefix "")
-    set(_boost_static_lib_suffix ".lib")
-else()
-    set(_boost_static_lib_prefix "lib")
-    set(_boost_static_lib_suffix ".a")
+if(BUILD_SHARED_LIBS)
+    set(_BOOST_LIB_TYPE SHARED)
+    if(WIN32)
+        set(_boost_lib_prefix "")
+        set(_boost_lib_suffix ".lib") # Import lib
+    else()
+        set(_boost_lib_prefix "lib")
+        if(APPLE)
+            set(_boost_lib_suffix ".dylib")
+        else()
+            set(_boost_lib_suffix ".so")
+        endif()
+    endif()
+else() # static
+    set(_BOOST_LIB_TYPE STATIC)
+    if(MSVC)
+        set(_boost_lib_prefix "")
+        set(_boost_lib_suffix ".lib")
+    else()
+        set(_boost_lib_prefix "lib")
+        set(_boost_lib_suffix ".a")
+    endif()
 endif()
 
 set(_boost_libs "")
@@ -101,10 +136,10 @@ foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
                 INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
             )
         else()
-            # This is a regular static library.
-            add_library(${TARGET_NAME} STATIC IMPORTED GLOBAL)
+            # This is a regular library.
+            add_library(${TARGET_NAME} ${_BOOST_LIB_TYPE} IMPORTED GLOBAL)
             set_target_properties(${TARGET_NAME} PROPERTIES
-                IMPORTED_LOCATION "${BOOST_INSTALL_PREFIX}/lib/${_boost_static_lib_prefix}boost_${COMPONENT}${_boost_static_lib_suffix}"
+                IMPORTED_LOCATION "${BOOST_INSTALL_PREFIX}/lib/${_boost_lib_prefix}boost_${COMPONENT}${_boost_lib_suffix}"
                 INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
             )
         endif()

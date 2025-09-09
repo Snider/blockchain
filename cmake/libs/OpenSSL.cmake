@@ -20,6 +20,16 @@ if(NOT PLATFORM_ID)
         set(_COMPILER_ID "gcc")
     endif()
 
+    # Add compiler version
+    if(MSVC)
+        set(_COMPILER_VERSION "${MSVC_VERSION}")
+    elseif (APPLE)
+        set(_COMPILER_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    else()
+        # For others like clang, gcc, appleclang, get major version
+        string(REGEX MATCH "^[0-9]+" _COMPILER_VERSION "${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+
     if(APPLE)
         if(CMAKE_OSX_ARCHITECTURES)
             set(_PLATFORM_ARCH "${CMAKE_OSX_ARCHITECTURES}")
@@ -33,7 +43,13 @@ if(NOT PLATFORM_ID)
             string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _PLATFORM_ARCH)
         endif()
     endif()
-    set(PLATFORM_ID "${_COMPILER_ID}-${_PLATFORM_ARCH}")
+    
+    if(BUILD_SHARED_LIBS)
+        set(_LINK_TYPE "shared")
+    else()
+        set(_LINK_TYPE "static")
+    endif()
+    set(PLATFORM_ID "${_COMPILER_ID}-${_COMPILER_VERSION}-${_PLATFORM_ARCH}-${_LINK_TYPE}")
 endif()
 
 message(STATUS "[OpenSSL.cmake] Determined Platform ID: ${PLATFORM_ID}")
@@ -46,8 +62,11 @@ set(OPENSSL_WORK_DIR ${DEP_WORK_ROOT}/openssl)
 # --- Makefile Integration ---
 set(MAKEFILE_VARS_CONTENT "
 OPENSSL_VERSION_FOR_PACKAGING := ${OPENSSL_VERSION}\n
+
 DEP_PLATFORM_ID_FOR_PACKAGING := ${PLATFORM_ID}\n
+
 OPENSSL_SDK_DIR_FOR_PACKAGING := ${OPENSSL_INSTALL_PREFIX}\n
+
 ")
 file(WRITE "${CMAKE_BINARY_DIR}/openssl_packaging.vars" "${MAKEFILE_VARS_CONTENT}")
 
@@ -180,6 +199,12 @@ if(NPROC EQUAL 0)
     set(NPROC 1)
 endif()
 
+if(BUILD_SHARED_LIBS)
+    set(_OPENSSL_BUILD_TYPE "shared")
+else()
+    set(_OPENSSL_BUILD_TYPE "no-shared")
+endif()
+
 ExternalProject_Add(openssl_external
     URL                 ${OPENSSL_URL}
     URL_HASH            SHA256=${OPENSSL_SHA256}
@@ -189,7 +214,7 @@ ExternalProject_Add(openssl_external
     EXCLUDE_FROM_ALL    1
 
     CONFIGURE_COMMAND   ${CONFIGURE_SCRIPT}
-                        no-shared
+                        ${_OPENSSL_BUILD_TYPE}
                         no-tests
                         --prefix=<INSTALL_DIR>
                         --openssldir=<INSTALL_DIR>

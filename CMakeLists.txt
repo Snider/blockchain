@@ -20,10 +20,6 @@ include(arch)
 # will add their external project targets as dependencies to this target.
 add_custom_target(build_sdk COMMENT "Building all bundled SDK dependencies (e.g., OpenSSL, Boost)...")
 
-# --- SDK Dependencies ---
-# This includes all external dependencies like OpenSSL and Boost.
-include(sdk)
-
 # On Apple platforms, define deployment target and other settings.
 if(APPLE)
   # Set deployment target based on build type
@@ -75,6 +71,9 @@ if(APPLE)
   set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 endif()
 
+# --- SDK Dependencies ---
+# This includes all external dependencies like OpenSSL and Boost.
+include(sdk)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   add_definitions(-DMOBILE_WALLET_BUILD)

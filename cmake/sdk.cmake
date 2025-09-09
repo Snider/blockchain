@@ -1,8 +1,20 @@
 include_guard(GLOBAL)
 
+# --- Build Configuration ---
+# This option controls whether dependencies should be built as shared or static libraries.
+# This affects the PLATFORM_ID and the build process for each dependency.
+option(BUILD_SHARED_LIBS "Build dependencies as shared libraries" OFF)
+
 # This file is intended to be the single point of entry for all SDK-related
 # dependencies. It will ensure that all necessary libraries (like OpenSSL,
 # Boost, etc.) are properly configured and built before the main project.
+
+# Create a single target that represents all SDK dependencies.
+# Individual dependency scripts (Boost.cmake, OpenSSL.cmake) will add their
+# external project targets as dependencies to this target.
+if(NOT TARGET build_sdk)
+    add_custom_target(build_sdk)
+endif()
 
 # --- OpenSSL Dependency ---
 include(libs/OpenSSL)
