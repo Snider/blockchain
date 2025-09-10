@@ -39,7 +39,6 @@ jobs:
         shell: bash
         run: |
           cpanm Locale::Maketext::Simple
-          cpanm Module::Build
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         shell: pwsh
