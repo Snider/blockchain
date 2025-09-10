@@ -182,14 +182,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
 endif()
 
 
-add_compile_definitions(
-    STATICLIB
-    BOOST_NO_CXX98_FUNCTION_BASE
-    # The 'epee' library uses the deprecated boost::asio::io_service. This macro re-enables it for compatibility with Boost 1.70+.
-    BOOST_ASIO_USE_DEPRECATED
-)
-
-
 if(MSVC)
   add_compile_definitions(
       _CRT_SECURE_NO_WARNINGS
@@ -284,10 +276,10 @@ else()
 endif()
 
 
-# always use local Boost installation rather than the system-wide (unless ZANO_USE_SYSTEM_BOOST is defined for some reason, which is not recommended)
-#if(NOT DEFINED ENV{ZANO_USE_SYSTEM_BOOST})
+# always use local Boost installation rather than the system-wide (unless USE_SYSTEM_BOOST is defined for some reason, which is not recommended)
+if(NOT DEFINED USE_SYSTEM_BOOST)
   set(Boost_NO_SYSTEM_PATHS ON)
-#endif()
+endif()
 
 if(MSVC)
   set(Boost_USE_STATIC_LIBS ON)

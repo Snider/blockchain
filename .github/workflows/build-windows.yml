@@ -39,13 +39,24 @@ jobs:
           choco install -y boost-msvc-14.3
           choco install -y openssl
 
+#      - name: Build CLI
+#        if: ${{ inputs.build-cli }}
+#        shell: pwsh
+#        run: |
+#          make.exe configure BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022" OPENSSL_USE_SYSTEM=ON USE_SYSTEM_BOOST=ON
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        shell: pwsh
-        run: |
-          make.exe configure BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022" OPENSSL_USE_SYSTEM=ON
-          make.exe build_sdk BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022" OPENSSL_USE_SYSTEM=ON
-          make.exe build BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022" OPENSSL_USE_SYSTEM=ON
+        uses: ./.github/actions/cmake-build
+        with:
+          jobs: '4'
+          build-type: 'Release'
+          chain-network: ${{ inputs.chain-network }}
+          target: 'build_sdk daemon simplewallet'
+          static: 'true'
+          generator: 'Visual Studio 17 2022'
+          arch: 'x86-64'
+
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}
