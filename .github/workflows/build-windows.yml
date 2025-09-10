@@ -32,7 +32,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           toolset: 14
-
+      - uses: ilammy/setup-nasm@v1
       - name: Install Perl CPAN modules
         shell: powershell
         run: |
