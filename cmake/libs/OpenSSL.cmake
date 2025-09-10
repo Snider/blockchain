@@ -143,7 +143,7 @@ else()
 endif()
 
 if(WIN32)
-    set(_jobs_flag "-m")
+    set(_jobs_flag "-m:")
 else()
     set(_jobs_flag "-j")
 endif()
