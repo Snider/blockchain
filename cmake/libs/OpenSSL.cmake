@@ -8,6 +8,17 @@ if(NOT DEFINED OPENSSL_VERSION)
     set(OPENSSL_VERSION "3.3.0" CACHE STRING "The version of OpenSSL to download and build")
 endif()
 
+option(OPENSSL_USE_SYSTEM "Use system-installed OpenSSL" OFF)
+
+if(OPENSSL_USE_SYSTEM)
+    message(STATUS "Attempting to use system-installed OpenSSL...")
+    find_package(OpenSSL REQUIRED)
+    message(STATUS "Found system-installed OpenSSL: ${OpenSSL_VERSION}")
+    # find_package(OpenSSL) creates the OpenSSL::SSL and OpenSSL::Crypto targets we need.
+    set(OpenSSL_FOUND TRUE)
+    return()
+endif()
+
 # --- Pre-compiled Cache Configuration ---
 option(FORCE_BUILD_OPENSSL "Force building OpenSSL from source, ignoring pre-compiled caches." OFF)
 option(REQUIRE_PRECOMPILED_OPENSSL "Fail the build if a pre-compiled OpenSSL cache cannot be downloaded and used." OFF)
@@ -19,10 +30,7 @@ set(OPENSSL_WORK_DIR ${DEP_WORK_ROOT}/openssl)
 
 # --- Makefile Integration ---
 set(MAKEFILE_VARS_CONTENT "
-OPENSSL_VERSION_FOR_PACKAGING := ${OPENSSL_VERSION}\n
-DEP_PLATFORM_ID_FOR_PACKAGING := ${PLATFORM_ID}\n
-OPENSSL_SDK_DIR_FOR_PACKAGING := ${OPENSSL_INSTALL_PREFIX}\n
-")
+OPENSSL_VERSION_FOR_PACKAGING := ${OPENSSL_VERSION}\n\nDEP_PLATFORM_ID_FOR_PACKAGING := ${PLATFORM_ID}\n\nOPENSSL_SDK_DIR_FOR_PACKAGING := ${OPENSSL_INSTALL_PREFIX}\n\n")
 file(WRITE "${CMAKE_BINARY_DIR}/openssl_packaging.vars" "${MAKEFILE_VARS_CONTENT}")
 
 # --- Define OpenSSL variables ---
@@ -111,7 +119,11 @@ elseif(APPLE)
     endif()
     set(CONFIGURE_COMMAND perl <SOURCE_DIR>/Configure)
 else() # Linux
-    set(OPENSSL_CONFIGURE_TARGET "linux-x86_64")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+        set(OPENSSL_CONFIGURE_TARGET "linux-aarch64")
+    else()
+        set(OPENSSL_CONFIGURE_TARGET "linux-x86_64")
+    endif()
     set(CONFIGURE_COMMAND <SOURCE_DIR>/config)
     # On 64-bit Linux, the default libdir is often 'lib64', but our project expects 'lib'.
     # Explicitly set the libdir to ensure consistency.

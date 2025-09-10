@@ -47,9 +47,9 @@ jobs:
         if: ${{ inputs.build-cli }}
         shell: pwsh
         run: |
-          make.exe configure BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022"
-          make.exe build_sdk BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022"
-          make.exe build BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022"
+          make.exe configure BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022" OPENSSL_USE_SYSTEM=ON
+          make.exe build_sdk
+          make.exe build
 
       - name: CLI Artifacts
         if: ${{ inputs.build-cli }}

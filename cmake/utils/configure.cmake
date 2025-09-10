@@ -15,7 +15,7 @@ endif()
 set(BUILD_DIR "${BUILD_ROOT}/${build_suffix}")
 
 message(STATUS "--- Configuring project in ${BUILD_DIR} ---")
-message(STATUS "   Build type: ${BUILD_TYPE}, GUI: ${BUILD_GUI}, Static: ${STATIC_BUILD}, Tests: ${BUILD_TESTS}, TOR: ${DISABLE_TOR}")
+message(STATUS "   Build type: ${BUILD_TYPE}, GUI: ${BUILD_GUI}, Static: ${STATIC_BUILD}, Tests: ${BUILD_TESTS}, TOR: ${DISABLE_TOR}, OPENSSL_USE_SYSTEM: ${OPENSSL_USE_SYSTEM}")
 
 # --- Determine Generator ---
 # This logic is placed here to avoid passing strings with spaces through the
@@ -45,6 +45,7 @@ list(APPEND CMAKE_FLAGS "-DBUILD_TESTS=${BUILD_TESTS}")
 list(APPEND CMAKE_FLAGS "-DSTATIC=${STATIC_BUILD}")
 list(APPEND CMAKE_FLAGS "-DTESTNET=${TESTNET}")
 list(APPEND CMAKE_FLAGS "-DDISABLE_TOR=${DISABLE_TOR}")
+list(APPEND CMAKE_FLAGS "-DOPENSSL_USE_SYSTEM=${OPENSSL_USE_SYSTEM}")
 
 set(CMAKE_PLATFORM_FLAGS "")
 if(DEFINED CMAKE_GENERATOR_PLATFORM AND CMAKE_GENERATOR_PLATFORM)
