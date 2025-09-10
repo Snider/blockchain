@@ -24,9 +24,9 @@ add_custom_target(build_sdk COMMENT "Building all bundled SDK dependencies (e.g.
 if(APPLE)
   # Set deployment target based on build type
   if(STATIC)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
   else()
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
   endif()
 
   # Define SDK folder name and expose variables to Makefile
