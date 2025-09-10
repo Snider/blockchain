@@ -18,6 +18,7 @@ TESTNET ?= ON
 DISABLE_TOR ?= ON
 DEFAULT_BUILD_TARGET ?= all
 CMAKE_GENERATOR ?= Unix Makefiles
+OPENSSL_USE_SYSTEM ?= OFF
 
 # --- Build Paths and Tools Configuration ---
 BUILD_ROOT := build
@@ -94,6 +95,7 @@ configure: bootstrap-cmake ## Configure the project with the specified options.
 	       -D TESTNET=$(TESTNET) \
 	       -D DISABLE_TOR=$(DISABLE_TOR) \
 	       -D CMAKE_GENERATOR="$(CMAKE_GENERATOR)" \
+	       -D OPENSSL_USE_SYSTEM="$(OPENSSL_USE_SYSTEM)" \
 	       -P cmake/utils/configure.cmake
 
 # Hidden target for debugging the configure script without re-bootstrapping.
@@ -109,6 +111,7 @@ debug-configure:
 	       -D TESTNET=$(TESTNET) \
 	       -D DISABLE_TOR=$(DISABLE_TOR) \
 	       -D CMAKE_GENERATOR="$(CMAKE_GENERATOR)" \
+	       -D OPENSSL_USE_SYSTEM="$(OPENSSL_USE_SYSTEM)" \
 	       -P cmake/utils/configure.cmake
 
 # Build the project using the existing configuration.
