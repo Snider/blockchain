@@ -33,11 +33,11 @@ jobs:
         with:
           toolset: 14
       - uses: ilammy/setup-nasm@v1
-      - name: Install Perl CPAN modules
-        shell: powershell
-        run: |
-          choco install -y boost-msvc-14.3
-          choco install -y openssl
+#      - name: Install Perl CPAN modules
+#        shell: powershell
+#        run: |
+#          choco install -y boost-msvc-14.3
+#          choco install -y openssl
 
 #      - name: Build CLI
 #        if: ${{ inputs.build-cli }}
@@ -49,7 +49,7 @@ jobs:
         if: ${{ inputs.build-cli }}
         uses: ./.github/actions/cmake-build
         with:
-          jobs: '4'
+#          jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
           target: 'build_sdk daemon simplewallet'

@@ -142,6 +142,12 @@ else()
     set(_OPENSSL_BUILD_TYPE "no-shared")
 endif()
 
+if(WIN32)
+    set(_jobs_flag "-m")
+else()
+    set(_jobs_flag "-j")
+endif()
+
 # For non-Windows platforms, we need to pass compiler/linker flags via env vars.
 if(NOT WIN32)
     set(OPENSSL_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -170,7 +176,7 @@ ExternalProject_Add(openssl_external
                         ${OPENSSL_CONFIGURE_TARGET}
                         ${OPENSSL_EXTRA_CONFIGURE_FLAGS}
 
-    BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${NPROC}
+    BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} ${_jobs_flag}${NPROC}
     INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install_sw # install_sw installs libs and headers only
 )
 
