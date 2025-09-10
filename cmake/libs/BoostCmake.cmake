@@ -206,7 +206,7 @@ ExternalProject_Add(
 
     LOG_CONFIGURE 0
     LOG_BUILD 0
-    LOG_INSTALL 0
+    LOG_INSTALL 1
 
     # --- Verification Step ---
     # After installation, run a small test project to verify that the new Boost
