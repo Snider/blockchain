@@ -115,6 +115,14 @@ else()
     set(_OPENSSL_BUILD_TYPE "no-shared")
 endif()
 
+set(OPENSSL_C_FLAGS "${CMAKE_C_FLAGS}")
+set(OPENSSL_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+if(APPLE AND CMAKE_OSX_SYSROOT)
+    message(STATUS "OpenSSL Build: Using sysroot ${CMAKE_OSX_SYSROOT}")
+    set(OPENSSL_C_FLAGS "${OPENSSL_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+    set(OPENSSL_LD_FLAGS "${OPENSSL_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+endif()
+
 ExternalProject_Add(openssl_external
     URL                 ${OPENSSL_URL}
     URL_HASH            SHA256=${OPENSSL_SHA256}
@@ -123,7 +131,11 @@ ExternalProject_Add(openssl_external
     PREFIX              ${OPENSSL_WORK_DIR}
     EXCLUDE_FROM_ALL    1
 
-    CONFIGURE_COMMAND   ${CONFIGURE_SCRIPT}
+    CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env
+                        "CC=${CMAKE_C_COMPILER}"
+                        "CFLAGS=${OPENSSL_C_FLAGS}"
+                        "LDFLAGS=${OPENSSL_LD_FLAGS}"
+                        ${CONFIGURE_SCRIPT}
                         ${_OPENSSL_BUILD_TYPE}
                         no-tests
                         --prefix=<INSTALL_DIR>
