@@ -35,12 +35,11 @@ jobs:
         run: |
           iwr -useb get.scoop.sh | iex
           scoop install perl
-          cpanm Module::Build
       - name: Install Perl CPAN modules
         shell: bash
         run: |
           cpanm Locale::Maketext::Simple
-
+          cpanm Module::Build
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         shell: pwsh
