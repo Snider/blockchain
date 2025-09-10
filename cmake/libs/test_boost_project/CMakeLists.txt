@@ -36,8 +36,8 @@ if(TARGET Boost::headers)
     target_link_libraries(run_test PRIVATE Boost::headers)
 endif()
 
-# Link against ICU libraries
-target_link_libraries(run_test PRIVATE ICU::data ICU::uc ICU::i18n)
+# Link against ICU libraries in the correct order: i18n -> uc -> data
+target_link_libraries(run_test PRIVATE ICU::i18n ICU::uc ICU::data)
 
 # Add preprocessor definitions for optional components
 if("locale" IN_LIST REQUIRED_COMPONENTS)

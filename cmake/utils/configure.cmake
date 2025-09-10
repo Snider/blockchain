@@ -21,8 +21,8 @@ message(STATUS "   Build type: ${BUILD_TYPE}, GUI: ${BUILD_GUI}, Static: ${STATI
 # This logic is placed here to avoid passing strings with spaces through the
 # `make` -> `cmake -P` interface, which is fragile on some `make` versions.
 if(NOT DEFINED CMAKE_GENERATOR OR "${CMAKE_GENERATOR}" STREQUAL "")
-    if(WIN32 AND NOT CMAKE_HOST_UNIX)
-        # Native Windows: Prefer Ninja if available, otherwise Visual Studio.
+    if(MSVC)
+        # Native Windows with MSVC: Prefer Ninja if available, otherwise Visual Studio.
 #        find_program(NINJA_EXE ninja)
 #        if(NINJA_EXE)
 #            set(CMAKE_GENERATOR "Ninja")

@@ -90,17 +90,23 @@ endif()
 # --- Configure command for different platforms ---
 if(WIN32)
     set(OPENSSL_CONFIGURE_TARGET "VC-WIN64A")
-    set(CONFIGURE_SCRIPT perl <SOURCE_DIR>/Configure)
-elseif(APPLE)
+    if(DEFINED ENV{PERL_EXECUTABLE})
+        set(PERL_EXECUTABLE "$ENV{PERL_EXECUTABLE}")
+        message(STATUS "OpenSSL Build: Using PERL_EXECUTABLE from environment: ${PERL_EXECUTABLE}")
+    else()
+        find_program(PERL_EXECUTABLE perl REQUIRED)
+    endif()
+    set(CONFIGURE_COMMAND ${PERL_EXECUTABLE} <SOURCE_DIR>/Configure)
+elif(APPLE)
     if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
         set(OPENSSL_CONFIGURE_TARGET "darwin64-arm64-cc")
     else()
         set(OPENSSL_CONFIGURE_TARGET "darwin64-x86_64-cc")
     endif()
-    set(CONFIGURE_SCRIPT perl <SOURCE_DIR>/Configure)
+    set(CONFIGURE_COMMAND perl <SOURCE_DIR>/Configure)
 else() # Linux
     set(OPENSSL_CONFIGURE_TARGET "linux-x86_64")
-    set(CONFIGURE_SCRIPT <SOURCE_DIR>/config)
+    set(CONFIGURE_COMMAND <SOURCE_DIR>/config)
 endif()
 
 include(ProcessorCount)
@@ -115,12 +121,16 @@ else()
     set(_OPENSSL_BUILD_TYPE "no-shared")
 endif()
 
-set(OPENSSL_C_FLAGS "${CMAKE_C_FLAGS}")
-set(OPENSSL_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-if(APPLE AND CMAKE_OSX_SYSROOT)
-    message(STATUS "OpenSSL Build: Using sysroot ${CMAKE_OSX_SYSROOT}")
-    set(OPENSSL_C_FLAGS "${OPENSSL_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
-    set(OPENSSL_LD_FLAGS "${OPENSSL_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+# For non-Windows platforms, we need to pass compiler/linker flags via env vars.
+if(NOT WIN32)
+    set(OPENSSL_C_FLAGS "${CMAKE_C_FLAGS}")
+    set(OPENSSL_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+    if(APPLE AND CMAKE_OSX_SYSROOT)
+        message(STATUS "OpenSSL Build: Using sysroot ${CMAKE_OSX_SYSROOT}")
+        set(OPENSSL_C_FLAGS "${OPENSSL_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+        set(OPENSSL_LD_FLAGS "${OPENSSL_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+    endif()
+    set(CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "CC=${CMAKE_C_COMPILER}" "CFLAGS=${OPENSSL_C_FLAGS}" "LDFLAGS=${OPENSSL_LD_FLAGS}" ${CONFIGURE_COMMAND})
 endif()
 
 ExternalProject_Add(openssl_external
@@ -131,11 +141,7 @@ ExternalProject_Add(openssl_external
     PREFIX              ${OPENSSL_WORK_DIR}
     EXCLUDE_FROM_ALL    1
 
-    CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env
-                        "CC=${CMAKE_C_COMPILER}"
-                        "CFLAGS=${OPENSSL_C_FLAGS}"
-                        "LDFLAGS=${OPENSSL_LD_FLAGS}"
-                        ${CONFIGURE_SCRIPT}
+    CONFIGURE_COMMAND   ${CONFIGURE_COMMAND}
                         ${_OPENSSL_BUILD_TYPE}
                         no-tests
                         --prefix=<INSTALL_DIR>
