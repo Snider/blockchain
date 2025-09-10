@@ -32,17 +32,13 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           toolset: 14
-#      - name: Install Scoop and dependencies
-#        shell: powershell
-#        run: |
-#          iwr -useb get.scoop.sh | iex
-#          scoop install perl
-#      - name: Install Perl CPAN modules
-#        shell: cmd
-#        run: |
-#          cpan App::cpanminus
-#          cpanm ExtUtils::Manifest
-#          cpanm Locale::Maketext::Simple
+
+      - name: Install Perl CPAN modules
+        shell: powershell
+        run: |
+          choco install -y boost-msvc-14.3
+          choco install -y openssl
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         shell: pwsh
