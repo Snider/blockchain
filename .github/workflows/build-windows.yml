@@ -33,11 +33,11 @@ jobs:
         with:
           toolset: 14
       - uses: ilammy/setup-nasm@v1
-#      - name: Install Perl CPAN modules
-#        shell: powershell
-#        run: |
-#          choco install -y boost-msvc-14.3
-#          choco install -y openssl
+      - name: Install Perl CPAN modules
+        shell: powershell
+        run: |
+          choco install -y boost-msvc-14.3
+          choco install -y openssl
 
 #      - name: Build CLI
 #        if: ${{ inputs.build-cli }}
@@ -52,7 +52,7 @@ jobs:
 #          jobs: '4'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          target: 'build_sdk daemon simplewallet'
+          target: 'daemon simplewallet'
           static: 'true'
           generator: 'Visual Studio 17 2022'
           arch: 'x86-64'
