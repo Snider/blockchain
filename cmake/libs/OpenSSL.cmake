@@ -88,6 +88,7 @@ if(NOT OPENSSL_URL)
 endif()
 
 # --- Configure command for different platforms ---
+set(OPENSSL_EXTRA_CONFIGURE_FLAGS "")
 if(WIN32)
     set(OPENSSL_CONFIGURE_TARGET "VC-WIN64A")
     if(DEFINED ENV{PERL_EXECUTABLE})
@@ -97,7 +98,7 @@ if(WIN32)
         find_program(PERL_EXECUTABLE perl REQUIRED)
     endif()
     set(CONFIGURE_COMMAND ${PERL_EXECUTABLE} <SOURCE_DIR>/Configure)
-    elseif(APPLE)
+elseif(APPLE)
     if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
         set(OPENSSL_CONFIGURE_TARGET "darwin64-arm64-cc")
     else()
@@ -107,6 +108,9 @@ if(WIN32)
 else() # Linux
     set(OPENSSL_CONFIGURE_TARGET "linux-x86_64")
     set(CONFIGURE_COMMAND <SOURCE_DIR>/config)
+    # On 64-bit Linux, the default libdir is often 'lib64', but our project expects 'lib'.
+    # Explicitly set the libdir to ensure consistency.
+    list(APPEND OPENSSL_EXTRA_CONFIGURE_FLAGS --libdir=<INSTALL_DIR>/lib)
 endif()
 
 include(ProcessorCount)
@@ -147,6 +151,7 @@ ExternalProject_Add(openssl_external
                         --prefix=<INSTALL_DIR>
                         --openssldir=<INSTALL_DIR>
                         ${OPENSSL_CONFIGURE_TARGET}
+                        ${OPENSSL_EXTRA_CONFIGURE_FLAGS}
 
     BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${NPROC}
     INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install_sw # install_sw installs libs and headers only
