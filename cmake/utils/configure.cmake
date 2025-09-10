@@ -23,12 +23,12 @@ message(STATUS "   Build type: ${BUILD_TYPE}, GUI: ${BUILD_GUI}, Static: ${STATI
 if(NOT DEFINED CMAKE_GENERATOR OR "${CMAKE_GENERATOR}" STREQUAL "")
     if(WIN32 AND NOT CMAKE_HOST_UNIX)
         # Native Windows: Prefer Ninja if available, otherwise Visual Studio.
-        find_program(NINJA_EXE ninja)
-        if(NINJA_EXE)
-            set(CMAKE_GENERATOR "Ninja")
-        else()
+#        find_program(NINJA_EXE ninja)
+#        if(NINJA_EXE)
+#            set(CMAKE_GENERATOR "Ninja")
+#        else()
             set(CMAKE_GENERATOR "Visual Studio 17 2022")
-        endif()
+#        endif()
     else()
         # Unix-like (Linux, macOS, WSL): Default to Makefiles.
         set(CMAKE_GENERATOR "Unix Makefiles")

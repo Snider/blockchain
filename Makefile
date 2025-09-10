@@ -10,11 +10,11 @@
 
 # --- Primary Build Configuration ---
 # These can be overridden from the command line, e.g., `make BUILD_TYPE=Debug`
-BUILD_TYPE ?= Release
+BUILD_TYPE ?= Debug
 BUILD_GUI ?= OFF
 BUILD_TESTS ?= OFF
 STATIC_BUILD ?= ON
-TESTNET ?= OFF
+TESTNET ?= ON
 DISABLE_TOR ?= ON
 DEFAULT_BUILD_TARGET ?= all
 
