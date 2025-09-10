@@ -30,16 +30,19 @@ jobs:
           fetch-depth: 0
           submodules: recursive
       - uses: ilammy/msvc-dev-cmd@v1
-      - name: Install Scoop and dependencies
-        shell: powershell
-        run: |
-          iwr -useb get.scoop.sh | iex
-          scoop install perl
-      - name: Install Perl CPAN modules
-        shell: bash
-        run: |
-          cpanm ExtUtils::Manifest
-          cpanm Locale::Maketext::Simple
+        with:
+          toolset: 14.xx
+#      - name: Install Scoop and dependencies
+#        shell: powershell
+#        run: |
+#          iwr -useb get.scoop.sh | iex
+#          scoop install perl
+#      - name: Install Perl CPAN modules
+#        shell: cmd
+#        run: |
+#          cpan App::cpanminus
+#          cpanm ExtUtils::Manifest
+#          cpanm Locale::Maketext::Simple
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         shell: pwsh
