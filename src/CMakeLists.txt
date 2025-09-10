@@ -93,16 +93,16 @@ if(WIN32)
 endif()
 
 add_library(crypto ${CRYPTO})
+add_dependencies(crypto build_sdk)
 if(USE_BITCOIN_SECP256K1_FOR_ECDSA)
   add_dependencies(crypto secp256k1)
   target_link_libraries(crypto secp256k1 ${BCRYPT_LIB})
 else()
-  add_dependencies(crypto OpenSSL::Crypto)
   target_link_libraries(crypto OpenSSL::Crypto ${BCRYPT_LIB})
 endif()
 
 add_library(currency_core ${CURRENCY_CORE})
-add_dependencies(currency_core version ${PCH_LIB_NAME})
+add_dependencies(currency_core version ${PCH_LIB_NAME} build_sdk)
 ENABLE_SHARED_PCH(currency_core)
 
 add_library(wallet  ${WALLET})

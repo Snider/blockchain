@@ -148,8 +148,8 @@ ExternalProject_Add(openssl_external
                         --openssldir=<INSTALL_DIR>
                         ${OPENSSL_CONFIGURE_TARGET}
 
-    BUILD_COMMAND       $(MAKE) -j${NPROC}
-    INSTALL_COMMAND     $(MAKE) install_sw # install_sw installs libs and headers only
+    BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${NPROC}
+    INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install_sw # install_sw installs libs and headers only
 )
 
 add_dependencies(OpenSSL::Crypto openssl_external)
