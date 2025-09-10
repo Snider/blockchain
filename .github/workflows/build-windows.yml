@@ -30,10 +30,17 @@ jobs:
           fetch-depth: 0
           submodules: recursive
       - uses: ilammy/msvc-dev-cmd@v1
-      - name: Install Perl modules for OpenSSL
-        shell: pwsh # Use PowerShell for Windows runners
+      - name: Install Scoop and dependencies
+        shell: powershell
         run: |
-          cpan Locale::Maketext::Simple
+          iwr -useb get.scoop.sh | iex
+          scoop install perl
+          cpanm Module::Build
+      - name: Install Perl CPAN modules
+        shell: bash
+        run: |
+          cpanm Locale::Maketext::Simple
+
       - name: Build CLI
         if: ${{ inputs.build-cli }}
         shell: pwsh
