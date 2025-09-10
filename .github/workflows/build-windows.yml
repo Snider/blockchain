@@ -38,6 +38,7 @@ jobs:
       - name: Install Perl CPAN modules
         shell: bash
         run: |
+          cpanm ExtUtils::Manifest
           cpanm Locale::Maketext::Simple
       - name: Build CLI
         if: ${{ inputs.build-cli }}
