@@ -116,7 +116,7 @@ endif()
 
 # Boost may have other dependencies (e.g. ICU, OpenSSL). We define them here.
 set(BOOST_EXTRA_DEPS OpenSSL::SSL OpenSSL::Crypto)
-set(ICU_ROOT "")
+#set(ICU_ROOT "")
 
 # --- ICU Dependency Build (if locale is requested) ---
 list(FIND BOOST_LIBS_TO_BUILD "locale" LOCALE_INDEX)
@@ -200,6 +200,10 @@ if(NOT LOCALE_INDEX EQUAL -1)
                 list(APPEND ICU_CONFIGURE_OPTIONS --host=aarch64-apple-darwin)
             elseif(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
                 list(APPEND ICU_CONFIGURE_OPTIONS --host=x86_64-apple-darwin)
+            endif()
+        elseif(UNIX AND NOT APPLE)
+            if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+                list(APPEND ICU_CONFIGURE_OPTIONS --host=aarch64-linux-gnu)
             endif()
         endif()
 
