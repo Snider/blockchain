@@ -131,45 +131,88 @@ if(NOT LOCALE_INDEX EQUAL -1)
         set(_NPROC 1)
     endif()
 
-    set(ICU_C_FLAGS "${CMAKE_C_FLAGS}")
-    set(ICU_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    set(ICU_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    if(APPLE AND CMAKE_OSX_SYSROOT)
-        message(STATUS "ICU Build: Using sysroot ${CMAKE_OSX_SYSROOT}")
-        set(ICU_C_FLAGS "${ICU_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
-        set(ICU_CXX_FLAGS "${ICU_CXX_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
-        set(ICU_LD_FLAGS "${ICU_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
-    endif()
-    set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}" "CFLAGS=${ICU_C_FLAGS}" "CXXFLAGS=${ICU_CXX_FLAGS}" "LDFLAGS=${ICU_LD_FLAGS}")
+    if(MSVC)
+        # For MSVC, we must build using the Visual Studio solution.
+        # The configure script is for Unix-like environments and fails with MSVC.
+        ExternalProject_Add(icu_external
+            URL                 ${ICU_URL}
+            URL_HASH            SHA256=${ICU_SHA256}
+            DOWNLOAD_DIR        ${SDK_CACHE_DIR}
+            INSTALL_DIR         ${ICU_INSTALL_PREFIX}
+            PREFIX              ${DEP_WORK_ROOT}/icu
+            EXCLUDE_FROM_ALL    1
 
-    set(ICU_CONFIGURE_OPTIONS "")
-    if(APPLE)
-        if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
-            list(APPEND ICU_CONFIGURE_OPTIONS --host=aarch64-apple-darwin)
-        elseif(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
-            list(APPEND ICU_CONFIGURE_OPTIONS --host=x86_64-apple-darwin)
+            # No configure step, we build the solution directly.
+            CONFIGURE_COMMAND   ""
+            BUILD_COMMAND       ${CMAKE_MSBUILD_COMMAND} <SOURCE_DIR>/source/allinone/allinone.sln /p:Configuration=Release /p:Platform=x64
+            # Manually install the headers and libraries.
+            INSTALL_COMMAND     cmd /c "copy <SOURCE_DIR>\\readme.html ${ICU_INSTALL_PREFIX}\\install_stamp.txt && xcopy <SOURCE_DIR>\\include ${ICU_INSTALL_PREFIX}\\include /s /e /y /i && xcopy <SOURCE_DIR>\\lib64 ${ICU_INSTALL_PREFIX}\\lib /s /e /y /i"
+            BUILD_BYPRODUCTS    <SOURCE_DIR>/lib64/sicuuc.lib
+                                <SOURCE_DIR>/lib64/sicuin.lib
+                                <SOURCE_DIR>/lib64/sicudt.lib
+        )
+
+        # Define imported targets for MSVC static build
+        if(NOT TARGET ICU::data)
+            add_library(ICU::data STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::data PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/sicudt.lib"
+            )
+            add_dependencies(ICU::data icu_external)
         endif()
-    endif()
+        if(NOT TARGET ICU::uc)
+            add_library(ICU::uc STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::uc PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/sicuuc.lib"
+            )
+            add_dependencies(ICU::uc icu_external)
+        endif()
+        if(NOT TARGET ICU::i18n)
+            add_library(ICU::i18n STATIC IMPORTED GLOBAL)
+            set_target_properties(ICU::i18n PROPERTIES
+                IMPORTED_LOCATION "${ICU_INSTALL_PREFIX}/lib/sicuin.lib"
+            )
+            add_dependencies(ICU::i18n icu_external)
+        endif()
 
-    ExternalProject_Add(icu_external
-        URL                 ${ICU_URL}
-        URL_HASH            SHA256=${ICU_SHA256}
-        DOWNLOAD_DIR        ${SDK_CACHE_DIR}
-        INSTALL_DIR         ${ICU_INSTALL_PREFIX}
-        PREFIX              ${DEP_WORK_ROOT}/icu
-        EXCLUDE_FROM_ALL    1
+    else()
+        # Existing logic for non-MSVC (Linux, macOS)
+        set(ICU_C_FLAGS "${CMAKE_C_FLAGS}")
+        set(ICU_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        set(ICU_LD_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+        if(APPLE AND CMAKE_OSX_SYSROOT)
+            message(STATUS "ICU Build: Using sysroot ${CMAKE_OSX_SYSROOT}")
+            set(ICU_C_FLAGS "${ICU_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+            set(ICU_CXX_FLAGS "${ICU_CXX_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+            set(ICU_LD_FLAGS "${ICU_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+        endif()
+        set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}" "CFLAGS=${ICU_C_FLAGS}" "CXXFLAGS=${ICU_CXX_FLAGS}" "LDFLAGS=${ICU_LD_FLAGS}")
 
-        CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
-                            sh <SOURCE_DIR>/${ICU_CONFIGURE_PATH}
-                            --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
-                            ${ICU_CONFIGURE_OPTIONS}
-        BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
-        INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
-    )
+        set(ICU_CONFIGURE_OPTIONS "")
+        if(APPLE)
+            if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+                list(APPEND ICU_CONFIGURE_OPTIONS --host=aarch64-apple-darwin)
+            elseif(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+                list(APPEND ICU_CONFIGURE_OPTIONS --host=x86_64-apple-darwin)
+            endif()
+        endif()
 
-    list(APPEND BOOST_EXTRA_DEPS icu_external)
+        ExternalProject_Add(icu_external
+            URL                 ${ICU_URL}
+            URL_HASH            SHA256=${ICU_SHA256}
+            DOWNLOAD_DIR        ${SDK_CACHE_DIR}
+            INSTALL_DIR         ${ICU_INSTALL_PREFIX}
+            PREFIX              ${DEP_WORK_ROOT}/icu
+            EXCLUDE_FROM_ALL    1
 
-    if(NOT MSVC)
+            CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
+                                sh <SOURCE_DIR>/${ICU_CONFIGURE_PATH}
+                                --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
+                                ${ICU_CONFIGURE_OPTIONS}
+            BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
+            INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
+        )
+
         if(NOT TARGET ICU::data)
             add_library(ICU::data STATIC IMPORTED GLOBAL)
             set_target_properties(ICU::data PROPERTIES
@@ -192,6 +235,8 @@ if(NOT LOCALE_INDEX EQUAL -1)
             add_dependencies(ICU::i18n icu_external)
         endif()
     endif()
+
+    list(APPEND BOOST_EXTRA_DEPS icu_external)
 endif()
 
 message(STATUS "Building Boost ${BOOST_VERSION} from source...")

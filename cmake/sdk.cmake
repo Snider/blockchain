@@ -181,7 +181,7 @@ include(libs/OpenSSL)
 # --- Boost Dependency ---
 # Define the list of required Boost components for the project.
 set(ZANO_BOOST_COMPONENTS "filesystem;thread;timer;date_time;chrono;regex;serialization;atomic;program_options")
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET) AND NOT WIN32)
   list(APPEND ZANO_BOOST_COMPONENTS locale)
 endif()
 if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
