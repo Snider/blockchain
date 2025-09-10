@@ -185,6 +185,11 @@ if(NOT LOCALE_INDEX EQUAL -1)
             set(ICU_C_FLAGS "${ICU_C_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
             set(ICU_CXX_FLAGS "${ICU_CXX_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
             set(ICU_LD_FLAGS "${ICU_LD_FLAGS} -isysroot ${CMAKE_OSX_SYSROOT}")
+        elseif(UNIX AND NOT APPLE)
+            # For static linking on Linux, PIC is required.
+            message(STATUS "ICU Build: Adding -fPIC for Linux static build.")
+            set(ICU_C_FLAGS "${ICU_C_FLAGS} -fPIC")
+            set(ICU_CXX_FLAGS "${ICU_CXX_FLAGS} -fPIC")
         endif()
         set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}" "CFLAGS=${ICU_C_FLAGS}" "CXXFLAGS=${ICU_CXX_FLAGS}" "LDFLAGS=${ICU_LD_FLAGS}")
 
