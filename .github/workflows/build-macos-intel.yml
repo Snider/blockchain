@@ -52,4 +52,4 @@ jobs:
             simplewallet
             connectivity_tool
           asset-type: 'cli'
-          asset-directory: ${{ github.workspace }}/build/release/src
+          asset-directory: ${{ github.workspace }}/build/release-static/src

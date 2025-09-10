@@ -32,6 +32,7 @@ jobs:
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
+        shell: cmd
         run: |
           make configure BUILD_TYPE=Release
           make build_sdk BUILD_TYPE=Release
