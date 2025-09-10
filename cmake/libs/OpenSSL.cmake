@@ -98,6 +98,11 @@ if(WIN32)
         find_program(PERL_EXECUTABLE perl REQUIRED)
     endif()
     set(CONFIGURE_COMMAND ${PERL_EXECUTABLE} <SOURCE_DIR>/Configure)
+    # On Windows, the environment for ExternalProject_Add can be sparse.
+    # We need to ensure the Perl interpreter can find modules.
+    # The OpenSSL source includes some modules, and we add this path to PERL5LIB
+    # to help resolve dependencies like Locale::Maketext::Simple.
+    set(CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env "PERL5LIB=<SOURCE_DIR>/util/perl" ${CONFIGURE_COMMAND})
 elseif(APPLE)
     if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
         set(OPENSSL_CONFIGURE_TARGET "darwin64-arm64-cc")
