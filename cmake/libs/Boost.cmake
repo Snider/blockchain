@@ -41,11 +41,11 @@ file(MAKE_DIRECTORY "${BOOST_INSTALL_PREFIX}/include" "${BOOST_INSTALL_PREFIX}/l
 # Determine library prefix. This is specific to how Boost names its libraries.
 if(MSVC AND SDK_LIB_TYPE STREQUAL "STATIC")
     set(_boost_lib_prefix "lib")
-elsif(WIN32 AND SDK_LIB_TYPE STREQUAL "SHARED")
+elseif (WIN32 AND SDK_LIB_TYPE STREQUAL "SHARED")
     set(_boost_lib_prefix "")
 else()
     set(_boost_lib_prefix "lib")
-endif()
+endif ()
 
 set(_boost_libs "")
 set(BOOST_INTERFACE_LIBS system regex) # List of known header-only/interface libraries
@@ -283,7 +283,7 @@ endif()
 if(BOOST_BUILD_SYSTEM STREQUAL "cmake")
     message(STATUS "Boost v${BOOST_VERSION}: Using CMake build system.")
     include(${CMAKE_CURRENT_LIST_DIR}/BoostCmake.cmake)
-elsif(BOOST_BUILD_SYSTEM STREQUAL "b2")
+elseif(BOOST_BUILD_SYSTEM STREQUAL "b2")
     message(STATUS "Boost v${BOOST_VERSION}: Using b2 build system.")
     include(${CMAKE_CURRENT_LIST_DIR}/BoostB2.cmake)
 else()
