@@ -36,7 +36,7 @@ jobs:
           submodules: recursive
 
       - name: install dependencies
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc pkg-config
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}
