@@ -34,7 +34,7 @@ jobs:
         if: ${{ inputs.build-cli }}
         run: |
           make configure BUILD_TYPE=Release
-          make build_sdk
+          make build_sdk BUILD_TYPE=Release
           make build BUILD_TYPE=Release
 
       - name: CLI Artifacts

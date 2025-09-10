@@ -33,6 +33,7 @@ if(ICU_ROOT)
     set(BOOST_EXTRA_C_FLAGS "${BOOST_EXTRA_C_FLAGS} -I${ICU_ROOT}/include")
     set(BOOST_EXTRA_CXX_FLAGS "${BOOST_EXTRA_CXX_FLAGS} -I${ICU_ROOT}/include")
     set(BOOST_EXTRA_LINKER_FLAGS "${BOOST_EXTRA_LINKER_FLAGS} -L${ICU_ROOT}/lib")
+
 endif()
 
 # If OpenSSL was found and built by our scripts, pass its location to Boost.

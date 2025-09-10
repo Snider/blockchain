@@ -133,6 +133,15 @@ if(NOT LOCALE_INDEX EQUAL -1)
 
     set(ICU_CONFIGURE_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}" "CFLAGS=${CMAKE_C_FLAGS}" "CXXFLAGS=${CMAKE_CXX_FLAGS}" "LDFLAGS=${CMAKE_EXE_LINKER_FLAGS}")
 
+    set(ICU_CONFIGURE_OPTIONS "")
+    if(APPLE)
+        if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+            list(APPEND ICU_CONFIGURE_OPTIONS --host=aarch64-apple-darwin)
+        elseif(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+            list(APPEND ICU_CONFIGURE_OPTIONS --host=x86_64-apple-darwin)
+        endif()
+    endif()
+
     ExternalProject_Add(icu_external
         URL                 ${ICU_URL}
         URL_HASH            SHA256=${ICU_SHA256}
@@ -144,6 +153,7 @@ if(NOT LOCALE_INDEX EQUAL -1)
         CONFIGURE_COMMAND   ${CMAKE_COMMAND} -E env ${ICU_CONFIGURE_ENV}
                             sh <SOURCE_DIR>/${ICU_CONFIGURE_PATH}
                             --prefix=<INSTALL_DIR> --disable-shared --enable-static --disable-tests --disable-samples
+                            ${ICU_CONFIGURE_OPTIONS}
         BUILD_COMMAND       ${CMAKE_MAKE_PROGRAM} -j${_NPROC}
         INSTALL_COMMAND     ${CMAKE_MAKE_PROGRAM} install
     )
