@@ -26,6 +26,8 @@ endfunction()
 
 #####  End of Precompiled Headers macros  ######
 
+option(BUILD_CONNECTIVITY_TOOL "Build the connectivity_tool utility" OFF)
+
 file(GLOB_RECURSE PCH pch/*)
 file(GLOB_RECURSE COMMON common/*)
 file(GLOB_RECURSE CRYPTO crypto/*)
@@ -37,7 +39,6 @@ file(GLOB_RECURSE P2P p2p/*)
 file(GLOB_RECURSE RPC rpc/*)
 file(GLOB_RECURSE STRATUM stratum/*)
 file(GLOB_RECURSE SIMPLEWALLET simplewallet/*)
-file(GLOB_RECURSE CONN_TOOL connectivity_tool/*)
 file(GLOB_RECURSE WALLET wallet/*)
 file(GLOB_RECURSE MINER miner/*)
 
@@ -47,7 +48,7 @@ if(BUILD_GUI)
   elseif(APPLE)
     file(GLOB_RECURSE QTDAEMON gui/qt-daemon/*.cpp gui/qt-daemon/*.h gui/qt-daemon/*.mm)
   else()
-    file(GLOB_RECURSE QTDAEMON gui/qt-daemon/*.cpp gui/qt-daemon/*.h)    
+    file(GLOB_RECURSE QTDAEMON gui/qt-daemon/*.cpp gui/qt-daemon/*.h)
   endif()
   list(FILTER QTDAEMON EXCLUDE REGEX "node_modules")
 endif()
@@ -63,7 +64,6 @@ source_group(p2p FILES ${P2P})
 source_group(rpc FILES ${RPC})
 source_group(stratum FILES ${STRATUM})
 source_group(simplewallet FILES ${SIMPLEWALLET})
-source_group(connectivity-tool FILES ${CONN_TOOL})
 source_group(wallet FILES ${WALLET})
 
 if(BUILD_GUI)
@@ -148,11 +148,16 @@ add_executable(daemon ${DAEMON} ${P2P} ${CURRENCY_PROTOCOL})
 add_dependencies(daemon version build_sdk)
 target_link_libraries(daemon rpc stratum currency_core crypto common libminiupnpc-static zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
 ENABLE_SHARED_PCH(daemon)
-                     
-add_executable(connectivity_tool ${CONN_TOOL})
-add_dependencies(connectivity_tool version build_sdk)
-target_link_libraries(connectivity_tool currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
-ENABLE_SHARED_PCH(connectivity_tool)
+
+if(BUILD_CONNECTIVITY_TOOL)
+  file(GLOB_RECURSE CONN_TOOL connectivity_tool/*)
+  source_group(connectivity-tool FILES ${CONN_TOOL})
+  add_executable(connectivity_tool ${CONN_TOOL})
+  add_dependencies(connectivity_tool version build_sdk)
+  target_link_libraries(connectivity_tool currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto)
+  ENABLE_SHARED_PCH(connectivity_tool)
+  set_property(TARGET connectivity_tool PROPERTY FOLDER "prog")
+endif()
 
 add_executable(simplewallet ${SIMPLEWALLET})
 add_dependencies(simplewallet version build_sdk)
@@ -169,73 +174,75 @@ set_property(TARGET wallet PROPERTY FOLDER "libs")
 
 set_property(TARGET daemon PROPERTY FOLDER "prog")
 set_property(TARGET simplewallet PROPERTY FOLDER "prog")
-set_property(TARGET connectivity_tool PROPERTY FOLDER "prog")
 
 set_target_properties(daemon PROPERTIES OUTPUT_NAME "zanod")
 
-if(BUILD_GUI)
-
-  if(APPLE)
-    FIND_LIBRARY(COCOA_LIBRARY Cocoa)
-  endif()
-
-  set(CMAKE_AUTOMOC ON)
-  set(CMAKE_INCLUDE_CURRENT_DIR ON)
-  SET(MACOSX_BUNDLE_ICON_FILE app.icns)
-  add_executable(Zano WIN32 MACOSX_BUNDLE ${QTDAEMON} )
-  add_dependencies(Zano version build_sdk)
-  target_link_libraries(Zano wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto Qt6::Core5Compat Qt6::Widgets Qt6::WebEngineWidgets Qt6::WebChannel Qt6::PrintSupport)
-  ENABLE_SHARED_PCH(Zano)
-	  
-  if(APPLE)
-    target_link_libraries(Zano PRIVATE ${COCOA_LIBRARY})
-    set_property(TARGET Zano PROPERTY XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES)
-  endif()
-  if(MSVC)
-    target_link_libraries(Zano PRIVATE shlwapi.lib)
-  endif()
-
-  set_property(TARGET Zano PROPERTY FOLDER "prog")
-  set_target_properties(Zano PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/gui/qt-daemon/Info.plist.in)
-
-  set(HTML_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gui/qt-daemon/layout/html)
-  set_target_properties(Zano PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--html-path=${HTML_DIR}")
-
-  set(CMAKE_AUTOMOC OFF)
-
-  # GUI convenience "bundle"
-#  set(GUI_DIR ${CMAKE_CURRENT_BINARY_DIR}/gui)
-#  set_target_properties(Zano PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${GUI_DIR})
-#  add_custom_command(TARGET Zano POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${HTML_DIR} ${GUI_DIR}/html)
-endif()
-
-if(APPLE)
-  set(SIMPLE_BUNDLE 1)
-endif()
-
-if(SIMPLE_BUNDLE)
-  set(INSTALL_DIR "${CMAKE_BINARY_DIR}/hp-${VERSION}")
-  install(TARGETS daemon simplewallet connectivity_tool
-      RUNTIME DESTINATION "${INSTALL_DIR}" COMPONENT Runtime
-  )
-
-  # Create a list of actual file paths for the Boost libraries to be used with the install(FILES...) command.
-  # This prevents the Boost_LIBRARIES variable (which contains target names) from being prematurely resolved to paths.
-  set(BOOST_INSTALL_FILES "")
-  foreach(lib_target ${Boost_LIBRARIES})
-    get_target_property(lib_path ${lib_target} IMPORTED_LOCATION_DEBUG)
-    if(NOT lib_path)
-      get_target_property(lib_path ${lib_target} IMPORTED_LOCATION)
-    endif()
-    if(lib_path)
-        list(APPEND BOOST_INSTALL_FILES ${lib_path})
-    endif()
-  endforeach()
-
-  install(FILES ${CMAKE_THREAD_LIBS_INIT} ${BOOST_INSTALL_FILES} DESTINATION "${INSTALL_DIR}/lib")
-
-  if(APPLE)
-    set(FIXUP_COMMAND ${CMAKE_SOURCE_DIR}/utils/macosx_fixup.sh " " ${INSTALL_DIR})
-    install(CODE "execute_process(COMMAND ${FIXUP_COMMAND})")
-  endif()
-endif()
+#if(BUILD_GUI)
+#
+#  if(APPLE)
+#    FIND_LIBRARY(COCOA_LIBRARY Cocoa)
+#  endif()
+#
+#  set(CMAKE_AUTOMOC ON)
+#  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+#  SET(MACOSX_BUNDLE_ICON_FILE app.icns)
+#  add_executable(Zano WIN32 MACOSX_BUNDLE ${QTDAEMON} )
+#  add_dependencies(Zano version build_sdk)
+#  target_link_libraries(Zano wallet rpc currency_core crypto common zlibstatic ethash ${CMAKE_THREAD_LIBS_INIT} Zano::boost_libs OpenSSL::SSL OpenSSL::Crypto Qt6::Core5Compat Qt6::Widgets Qt6::WebEngineWidgets Qt6::WebChannel Qt6::PrintSupport)
+#  ENABLE_SHARED_PCH(Zano)
+#
+#  if(APPLE)
+#    target_link_libraries(Zano PRIVATE ${COCOA_LIBRARY})
+#    set_property(TARGET Zano PROPERTY XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES)
+#  endif()
+#  if(MSVC)
+#    target_link_libraries(Zano PRIVATE shlwapi.lib)
+#  endif()
+#
+#  set_property(TARGET Zano PROPERTY FOLDER "prog")
+#  set_target_properties(Zano PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/gui/qt-daemon/Info.plist.in)
+#
+#  set(HTML_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gui/qt-daemon/layout/html)
+#  set_target_properties(Zano PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--html-path=${HTML_DIR}")
+#
+#  set(CMAKE_AUTOMOC OFF)
+#
+#  # GUI convenience "bundle"
+##  set(GUI_DIR ${CMAKE_CURRENT_BINARY_DIR}/gui)
+##  set_target_properties(Zano PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${GUI_DIR})
+##  add_custom_command(TARGET Zano POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${HTML_DIR} ${GUI_DIR}/html)
+#endif()
+#
+#if(APPLE)
+#  set(SIMPLE_BUNDLE 1)
+#endif()
+#
+#if(SIMPLE_BUNDLE)
+#  set(INSTALL_TARGETS daemon simplewallet)
+#  if(BUILD_CONNECTIVITY_TOOL)
+#    list(APPEND INSTALL_TARGETS connectivity_tool)
+#  endif()
+#  install(TARGETS ${INSTALL_TARGETS}
+#      RUNTIME DESTINATION "${INSTALL_DIR}" COMPONENT Runtime
+#  )
+#
+#  # Create a list of actual file paths for the Boost libraries to be used with the install(FILES...) command.
+#  # This prevents the Boost_LIBRARIES variable (which contains target names) from being prematurely resolved to paths.
+#  set(BOOST_INSTALL_FILES "")
+#  foreach(lib_target ${Boost_LIBRARIES})
+#    get_target_property(lib_path ${lib_target} IMPORTED_LOCATION_DEBUG)
+#    if(NOT lib_path)
+#      get_target_property(lib_path ${lib_target} IMPORTED_LOCATION)
+#    endif()
+#    if(lib_path)
+#        list(APPEND BOOST_INSTALL_FILES ${lib_path})
+#    endif()
+#  endforeach()
+#
+#  install(FILES ${CMAKE_THREAD_LIBS_INIT} ${BOOST_INSTALL_FILES} DESTINATION "${INSTALL_DIR}/lib")
+#
+#  if(APPLE)
+#    set(FIXUP_COMMAND ${CMAKE_SOURCE_DIR}/utils/macosx_fixup.sh " " ${INSTALL_DIR})
+#    install(CODE "execute_process(COMMAND ${FIXUP_COMMAND})")
+#  endif()
+#endif()

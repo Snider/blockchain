@@ -30,9 +30,13 @@ jobs:
           fetch-depth: 0
           submodules: recursive
       - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Perl modules for OpenSSL
+        shell: pwsh # Use PowerShell for Windows runners
+        run: |
+          cpan Locale::Maketext::Simple
       - name: Build CLI
         if: ${{ inputs.build-cli }}
-        shell: cmd
+        shell: pwsh
         run: |
           make.exe configure BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022"
           make.exe build_sdk BUILD_TYPE=Release CMAKE_GENERATOR="Visual Studio 17 2022"
