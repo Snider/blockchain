@@ -31,7 +31,7 @@ jobs:
           submodules: recursive
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          toolset: 14.xx
+          toolset: 14
 #      - name: Install Scoop and dependencies
 #        shell: powershell
 #        run: |
