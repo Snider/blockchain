@@ -10,7 +10,7 @@
 
 # --- Primary Build Configuration ---
 # These can be overridden from the command line, e.g., `make BUILD_TYPE=Debug`
-BUILD_TYPE ?= Debug
+BUILD_TYPE ?= Release
 BUILD_GUI ?= OFF
 BUILD_TESTS ?= OFF
 STATIC_BUILD ?= ON
