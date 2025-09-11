@@ -1,19 +1,58 @@
 include_guard(GLOBAL)
 
+
+# --- SDK Build Options ---
+option(USE_SYSTEM_DEPS "Use system-provided dependencies (Boost, OpenSSL, etc.)" OFF)
+option(USE_SDK_CACHE "Use pre-compiled dependency cache if available" ON)
+option(REQUIRE_PRECOMPILED "Fail the build if pre-compiled dependencies are not available" OFF)
+
+# This option is kept from the original file
+option(BUILD_SHARED_LIBS "Build dependencies as shared libraries" OFF)
+
+# Create a single target that represents all SDK dependencies.
+# This allows other targets to depend on the entire SDK being ready.
+if(NOT TARGET build_sdk)
+    add_custom_target(build_sdk)
+endif()
+
+# If using system dependencies, find them and return.
+if(USE_SYSTEM_DEPS)
+    message(STATUS "[sdk.cmake] USE_SYSTEM_DEPS is ON. Finding system dependencies.")
+
+    # --- Find OpenSSL ---
+    find_package(OpenSSL REQUIRED)
+    message(STATUS "Found OpenSSL: ${OPENSSL_VERSION}")
+
+    # --- Find Boost ---
+    set(ZANO_BOOST_COMPONENTS "filesystem;thread;timer;date_time;chrono;regex;serialization;atomic;program_options")
+    # The linker errors show that boost::locale is required, so we must include it on Windows.
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET)
+      list(APPEND ZANO_BOOST_COMPONENTS locale)
+    endif()
+    if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
+      list(APPEND ZANO_BOOST_COMPONENTS log log_setup)
+    endif()
+
+    if(STATIC)
+        set(Boost_USE_STATIC_LIBS ON)
+        set(Boost_USE_STATIC_RUNTIME ON)
+    endif()
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 OLD)
+    endif()
+    find_package(Boost 1.86.0 REQUIRED COMPONENTS ${ZANO_BOOST_COMPONENTS})
+    if(Boost_FOUND)
+        message(STATUS "Found Boost: ${Boost_VERSION}")
+    endif()
+
+    return()
+endif()
+
+# --- From this point, we are building the SDK ourselves ---
+message(STATUS "[sdk.cmake] USE_SYSTEM_DEPS is OFF. Building SDK from source or cache.")
+
 #
 # Downloads and extracts a pre-compiled dependency from a cache.
-#
-# This function constructs the cache URL, downloads the archive, verifies its SHA256 hash,
-# and extracts it to the specified installation directory.
-#
-# Arguments:
-#   DEP_NAME:           The name of the dependency (e.g., "Boost", "OpenSSL").
-#   DEP_VERSION:        The version string of the dependency (e.g., "1.85.0").
-#   INSTALL_PREFIX:     The root directory where the dependency should be installed.
-#   REQUIRE_PRECOMPILED: (Optional) If TRUE, the build will fail if the cache cannot be used.
-#
-# Output Variables (in parent scope):
-#   CACHE_DOWNLOAD_SUCCESS: Set to TRUE if the dependency was successfully downloaded and extracted, FALSE otherwise.
 #
 function(sdk_download_and_extract_cache DEP_NAME DEP_VERSION INSTALL_PREFIX)
     set(options REQUIRE_PRECOMPILED)
@@ -25,7 +64,6 @@ function(sdk_download_and_extract_cache DEP_NAME DEP_VERSION INSTALL_PREFIX)
 
     string(REPLACE "." "_" VERSION_SUFFIX ${DEP_VERSION})
     string(REPLACE "-" "_" PLATFORM_ID_SUFFIX ${PLATFORM_ID})
-    # The variable containing the hash is constructed dynamically, e.g., BOOST_VERSION_1_85_0_CACHE_SHA256_...
     set(EXPECTED_CACHE_HASH ${${DEP_NAME}_VERSION_${VERSION_SUFFIX}_CACHE_SHA256_${PLATFORM_ID_SUFFIX}})
 
     if(NOT EXPECTED_CACHE_HASH)
@@ -87,15 +125,6 @@ function(sdk_download_and_extract_cache DEP_NAME DEP_VERSION INSTALL_PREFIX)
     set(CACHE_DOWNLOAD_SUCCESS FALSE PARENT_SCOPE)
 endfunction()
 
-# --- Build Configuration ---
-# This option controls whether dependencies should be built as shared or static libraries.
-# This affects the PLATFORM_ID and the build process for each dependency.
-option(BUILD_SHARED_LIBS "Build dependencies as shared libraries" OFF)
-
-# This file is intended to be the single point of entry for all SDK-related
-# dependencies. It will ensure that all necessary libraries (like OpenSSL,
-# Boost, etc.) are properly configured and built before the main project.
-
 # --- Global SDK Configuration ---
 set(PRECOMPILED_CACHE_URL "https://github.com/letheanVPN/blockchain/releases/download/prebuilt-deps" CACHE STRING "Base URL for pre-compiled dependency packages")
 set(SDK_CACHE_DIR ${CMAKE_SOURCE_DIR}/build/sdk/_cache)
@@ -108,15 +137,11 @@ if(NOT PLATFORM_ID)
         set(_COMPILER_ID "gcc")
     endif()
 
-    # Add compiler version
     if(MSVC)
         set(_COMPILER_VERSION "${MSVC_VERSION}")
     elseif (APPLE)
-        # On Apple, the deployment target is a better indicator of the toolchain/SDK version
-        # than the compiler version itself, especially for pre-compiled dependencies.
         set(_COMPILER_VERSION "${CMAKE_OSX_DEPLOYMENT_TARGET}")
     else()
-        # For others like clang, gcc, get major version
         string(REGEX MATCH "^[0-9]+" _COMPILER_VERSION "${CMAKE_CXX_COMPILER_VERSION}")
     endif()
 
@@ -146,12 +171,10 @@ endif()
 message(STATUS "[sdk.cmake] Determined Platform ID: ${PLATFORM_ID}")
 
 # --- Global Library Suffix and Type ---
-# Defines global variables for library types based on the build configuration.
-# These are used by dependency scripts (Boost, OpenSSL) to create/find the correct library files.
 if(BUILD_SHARED_LIBS)
     set(SDK_LIB_TYPE SHARED)
     if(WIN32)
-        set(SDK_LIB_SUFFIX ".lib") # Import lib for .dll
+        set(SDK_LIB_SUFFIX ".lib")
     else()
         if(APPLE)
             set(SDK_LIB_SUFFIX ".dylib")
@@ -168,18 +191,10 @@ else() # static
     endif()
 endif()
 
-# Create a single target that represents all SDK dependencies.
-# Individual dependency scripts (Boost.cmake, OpenSSL.cmake) will add their
-# external project targets as dependencies to this target.
-if(NOT TARGET build_sdk)
-    add_custom_target(build_sdk)
-endif()
-
 # --- OpenSSL Dependency ---
 include(libs/OpenSSL)
 
 # --- Boost Dependency ---
-# Define the list of required Boost components for the project.
 set(ZANO_BOOST_COMPONENTS "filesystem;thread;timer;date_time;chrono;regex;serialization;atomic;program_options")
 if((NOT CMAKE_SYSTEM_NAME STREQUAL "Android" OR CAKEWALLET) AND NOT WIN32)
   list(APPEND ZANO_BOOST_COMPONENTS locale)
@@ -188,26 +203,17 @@ if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Android"))
   list(APPEND ZANO_BOOST_COMPONENTS log log_setup)
 endif()
 
-# Pass the required components to the build script.
 set(BOOST_LIBS_TO_BUILD "system;${ZANO_BOOST_COMPONENTS}")
-
-# Optionally set the Boost version. The default is handled by Boost.cmake.
 set(BOOST_VERSION "1.86.0" CACHE STRING "The version of Boost to download and build")
-
-# This script will find or prepare the Boost dependency and define the necessary
-# Boost_... variables (e.g., Boost_INCLUDE_DIRS, Boost_LIBRARIES, Boost_FOUND).
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 include(libs/Boost)
 
-# The include(Boost) script will FATAL_ERROR if it cannot satisfy the dependency.
-# So, we can assume Boost_FOUND is TRUE after this point.
 message(STATUS "Using Boost: ${Boost_VERSION} from ${Boost_LIBRARY_DIRS}")
-
-# Now that Boost has been found or built, add its include directory to the global path.
 include_directories(${Boost_INCLUDE_DIRS})
 
 # --- Cache Cleaning Target ---
-# This target provides an easy way for developers to clear out all dependency-related
-# caches and installed SDKs.
 add_custom_target(clean_sdk_cache
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${SDK_CACHE_DIR}
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${DEP_WORK_ROOT}

@@ -20,6 +20,10 @@ include(arch)
 # will add their external project targets as dependencies to this target.
 add_custom_target(build_sdk COMMENT "Building all bundled SDK dependencies (e.g., OpenSSL, Boost)...")
 
+
+# --- SDK Dependencies ---
+# This includes all external dependencies like OpenSSL and Boost.
+include(sdk)
 # On Apple platforms, define deployment target and other settings.
 if(APPLE)
   # Set deployment target based on build type
@@ -71,10 +75,6 @@ if(APPLE)
   set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 endif()
 
-# --- SDK Dependencies ---
-# This includes all external dependencies like OpenSSL and Boost.
-include(sdk)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   add_definitions(-DMOBILE_WALLET_BUILD)
   if(CMAKE_SYSTEM_NAME STREQUAL "iOS" )   
@@ -96,6 +96,11 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (UNIX AND NOT APPLE)
   set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo")
   if (NOT CMAKE_BUILD_TYPE) # single configurations, defaults to Release
+    set(CMAKE_BUILD_TYPE "Release")
+  endif()
+elseif (WIN32)
+  set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
+  if (NOT CMAKE_BUILD_TYPE OR NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Release")) # single configurations, defaults to Release
     set(CMAKE_BUILD_TYPE "Release")
   endif()
 endif()
@@ -192,9 +197,9 @@ if(MSVC)
   add_compile_options(/EHa /bigobj /Zm1000 /Z7 /MP2 /W3 /GS- /wd4996 /wd4503 /wd4345 /wd4091 /FIinline_c.h)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:10485760 /DEBUG dbghelp.lib crypt32.lib")
   if(STATIC)
-    foreach(VAR CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE)
-      string(REPLACE "/MD" "/MT" ${VAR} "${${VAR}}")
-    endforeach()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+  else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
   endif()
   include_directories(SYSTEM src/platform/msc)
   configure_file(utils/Directory.Build.props.in ${CMAKE_BINARY_DIR}/Directory.Build.props)
@@ -278,7 +283,7 @@ endif()
 
 # always use local Boost installation rather than the system-wide (unless USE_SYSTEM_BOOST is defined for some reason, which is not recommended)
 if(NOT DEFINED USE_SYSTEM_BOOST)
-  set(Boost_NO_SYSTEM_PATHS ON)
+#  set(Boost_NO_SYSTEM_PATHS ON)
 endif()
 
 if(MSVC)
@@ -292,7 +297,8 @@ endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 
-include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
+
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application
 if(MINGW)
   list(APPEND Boost_LIBRARIES ws2_32 mswsock)

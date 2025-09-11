@@ -18,22 +18,19 @@ message(STATUS "--- Configuring project in ${BUILD_DIR} ---")
 message(STATUS "   Build type: ${BUILD_TYPE}, GUI: ${BUILD_GUI}, Static: ${STATIC_BUILD}, Tests: ${BUILD_TESTS}, TOR: ${DISABLE_TOR}, OPENSSL_USE_SYSTEM: ${OPENSSL_USE_SYSTEM}")
 
 # --- Determine Generator ---
-# This logic is placed here to avoid passing strings with spaces through the
-# `make` -> `cmake -P` interface, which is fragile on some `make` versions.
-if(NOT DEFINED CMAKE_GENERATOR OR "${CMAKE_GENERATOR}" STREQUAL "")
-    if(MSVC)
+if(MSVC OR WIN32)
         # Native Windows with MSVC: Prefer Ninja if available, otherwise Visual Studio.
 #        find_program(NINJA_EXE ninja)
 #        if(NINJA_EXE)
 #            set(CMAKE_GENERATOR "Ninja")
 #        else()
-            set(CMAKE_GENERATOR "Visual Studio 17 2022")
+        set(CMAKE_GENERATOR "Visual Studio 17 2022")
 #        endif()
-    else()
+else()
         # Unix-like (Linux, macOS, WSL): Default to Makefiles.
         set(CMAKE_GENERATOR "Unix Makefiles")
-    endif()
 endif()
+
 message(STATUS "   Using generator: ${CMAKE_GENERATOR}")
 
 # --- Run CMake Configure ---

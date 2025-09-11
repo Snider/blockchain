@@ -26,6 +26,9 @@ inputs:
   static:
     description: 'Build statically.'
     required: false
+  system-deps:
+    description: 'Use system dependancies.'
+    required: false
   generator:
     description: 'The CMake generator to use.'
     required: false
@@ -58,4 +61,5 @@ runs:
           ${{ inputs.arch && format('ARCH={0}', inputs.arch) }}
           CMAKE_BUILD_TYPE=${{ inputs.build-type }}
           ${{ inputs.build-gui && 'BUILD_GUI=ON' }}
+          ${{ inputs.system-deps && 'USE_SYSTEM_DEPS=ON' }}
           DISABLE_TOR=TRUE
