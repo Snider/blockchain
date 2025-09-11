@@ -63,6 +63,5 @@ jobs:
           assets: |
             zanod.exe
             simplewallet.exe
-            connectivity_tool.exe
           asset-type: 'cli'
           asset-directory: ${{ github.workspace }}\build\release\src\Release
