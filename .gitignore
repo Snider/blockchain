@@ -78,7 +78,7 @@ Mkfile.old
 dkms.conf
 .idea/deployment.xml
 .idea/cmake.xml
-
+.venv
 .gemini/
 gha-creds-*.json
 /.idea/*
