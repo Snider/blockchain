@@ -17,6 +17,7 @@ endif()
 
 # If using system dependencies, find them and return.
 if(USE_SYSTEM_DEPS)
+    cmake_policy(SET CMP0144 OLD)
     message(STATUS "[sdk.cmake] USE_SYSTEM_DEPS is ON. Finding system dependencies.")
 
     # --- Find OpenSSL ---
