@@ -21,14 +21,11 @@ include(arch)
 add_custom_target(build_sdk COMMENT "Building all bundled SDK dependencies (e.g., OpenSSL, Boost)...")
 
 
-# --- SDK Dependencies ---
-# This includes all external dependencies like OpenSSL and Boost.
-include(sdk)
 # On Apple platforms, define deployment target and other settings.
 if(APPLE)
   # Set deployment target based on build type
   if(STATIC)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
   else()
     set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0)
   endif()
@@ -297,6 +294,9 @@ endif()
 
 message("CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 
+# --- SDK Dependencies ---
+# This includes all external dependencies like OpenSSL and Boost.
+include(sdk)
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/contrib/ethereum/libethash)
 # Link additional system libraries required by Boost components or the application
