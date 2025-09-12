@@ -99,7 +99,8 @@ add_dependencies(common version ${PCH_LIB_NAME})
 if(USE_SYSTEM_DEPS)
     target_link_libraries(common PUBLIC ${ZANO_BOOST_TARGETS})
 else()
-    target_link_libraries(common PUBLIC Boost::boost)
+    add_dependencies(common build_sdk)
+    target_link_libraries(common PUBLIC Boost::headers)
 endif()
 
 ENABLE_SHARED_PCH(common)
@@ -214,5 +215,3 @@ set_property(TARGET daemon PROPERTY FOLDER "prog")
 set_property(TARGET simplewallet PROPERTY FOLDER "prog")
 
 set_target_properties(daemon PROPERTIES OUTPUT_NAME "zanod")
-
-# ... (rest of the file is unchanged)

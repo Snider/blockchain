@@ -38,7 +38,45 @@ set(Boost_VERSION ${BOOST_VERSION})
 
 file(MAKE_DIRECTORY "${BOOST_INSTALL_PREFIX}/include" "${BOOST_INSTALL_PREFIX}/lib")
 
-# Determine library prefix. This is specific to how Boost names its libraries.
+# --- Create Boost Targets ---
+# Replicate the structure from the official Boost-provided CMake files
+# to ensure consistency between USE_SYSTEM_DEPS=ON and USE_SYSTEM_DEPS=OFF.
+
+# 1. Create the header-only and compatibility targets.
+if(NOT TARGET Boost::headers)
+    add_library(Boost::headers INTERFACE IMPORTED GLOBAL)
+    set_target_properties(Boost::headers PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
+    )
+endif()
+
+if(NOT TARGET Boost::boost)
+    add_library(Boost::boost INTERFACE IMPORTED GLOBAL)
+    set_property(TARGET Boost::boost APPEND PROPERTY INTERFACE_LINK_LIBRARIES Boost::headers)
+endif()
+
+if(NOT TARGET Boost::diagnostic_definitions)
+    add_library(Boost::diagnostic_definitions INTERFACE IMPORTED GLOBAL)
+    if(WIN32)
+        set_property(TARGET Boost::diagnostic_definitions PROPERTY INTERFACE_COMPILE_DEFINITIONS "BOOST_LIB_DIAGNOSTIC")
+    endif()
+endif()
+
+if(NOT TARGET Boost::disable_autolinking)
+    add_library(Boost::disable_autolinking INTERFACE IMPORTED GLOBAL)
+    if(WIN32)
+        set_property(TARGET Boost::disable_autolinking PROPERTY INTERFACE_COMPILE_DEFINITIONS "BOOST_ALL_NO_LIB")
+    endif()
+endif()
+
+if(NOT TARGET Boost::dynamic_linking)
+    add_library(Boost::dynamic_linking INTERFACE IMPORTED GLOBAL)
+    if(WIN32)
+        set_property(TARGET Boost::dynamic_linking PROPERTY INTERFACE_COMPILE_DEFINITIONS "BOOST_ALL_DYN_LINK")
+    endif()
+endif()
+
+# 2. Create targets for each compiled library component.
 if(MSVC AND SDK_LIB_TYPE STREQUAL "STATIC")
     set(_boost_lib_prefix "lib")
 elseif (WIN32 AND SDK_LIB_TYPE STREQUAL "SHARED")
@@ -48,27 +86,20 @@ else()
 endif ()
 
 set(_boost_libs "")
-set(BOOST_INTERFACE_LIBS system regex) # List of known header-only/interface libraries
+list(APPEND _boost_libs Boost::headers)
 
 foreach(COMPONENT ${BOOST_LIBS_TO_BUILD})
     set(TARGET_NAME "Boost::${COMPONENT}")
     if(NOT TARGET ${TARGET_NAME})
-        list(FIND BOOST_INTERFACE_LIBS ${COMPONENT} _is_interface)
-        if(_is_interface GREATER -1)
-            add_library(${TARGET_NAME} INTERFACE IMPORTED GLOBAL)
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
-            )
-        else()
-            add_library(${TARGET_NAME} ${SDK_LIB_TYPE} IMPORTED GLOBAL)
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                IMPORTED_LOCATION "${BOOST_INSTALL_PREFIX}/lib/${_boost_lib_prefix}boost_${COMPONENT}${SDK_LIB_SUFFIX}"
-                INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
-            )
-        endif()
+        add_library(${TARGET_NAME} ${SDK_LIB_TYPE} IMPORTED GLOBAL)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            IMPORTED_LOCATION "${BOOST_INSTALL_PREFIX}/lib/${_boost_lib_prefix}boost_${COMPONENT}${SDK_LIB_SUFFIX}"
+            INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INSTALL_PREFIX}/include"
+        )
     endif()
     list(APPEND _boost_libs ${TARGET_NAME})
 endforeach()
+
 set(Boost_LIBRARIES "${_boost_libs}")
 
 # --- Check for existing valid installation ---
