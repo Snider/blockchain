@@ -47,7 +47,9 @@ runs:
       uses: threeal/cmake-action@v2.1.0
       env:
         CCACHE_TEMPDIR: ${{ github.workspace }}/build/ccache
+        BOOST_ROOT: ${{ inputs.boost-root }}
 #        OPENSSL_ROOT_DIR: ${{ github.workspace }}/build/openssl
+
       with:
         build-dir: build/${{ steps.set_paths.outputs.build_dir_name }}
         generator: ${{ inputs.generator }}
