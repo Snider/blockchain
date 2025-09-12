@@ -31,18 +31,7 @@ jobs:
           submodules: recursive
 
       - name: install dependencies
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc
-
-      - name: Install boost
-        uses: MarkusJx/install-boost@6d8df42f57de83c5b326b5b83e7b35d650030103
-        id: install-boost
-        with:
-          boost_version: 1.88.0
-          boost_install_dir: ${{ github.workspace }}/build/boost_1_88_0
-          platform_version: 13
-          toolset: clang
-          arch: 'x86'
-
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc boost openssl@3
 
       - name: Build CLI
         if: ${{ inputs.build-cli }}

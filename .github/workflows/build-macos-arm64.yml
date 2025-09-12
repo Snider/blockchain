@@ -36,17 +36,7 @@ jobs:
           submodules: recursive
 
       - name: install dependencies
-        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc pkg-config openssl@3
-
-      - name: Install boost
-        uses: MarkusJx/install-boost@6d8df42f57de83c5b326b5b83e7b35d650030103
-        id: install-boost
-        with:
-          boost_version: 1.88.0
-          boost_install_dir: ${{ github.workspace }}/build/boost_1_88_0
-          platform_version: 14
-          toolset: clang
-          arch: aarch64
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install miniupnpc pkg-config openssl@3 boost
 
       - name: Build CLI
         uses: ./.github/actions/cmake-build
@@ -54,7 +44,6 @@ jobs:
           jobs: '3'
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
-          boost-root: ${{ steps.install-boost.outputs.BOOST_ROOT }}
           target: 'daemon simplewallet'
           static: 'true'
           arch: 'aarch64'
