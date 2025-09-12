@@ -45,7 +45,7 @@ jobs:
           build-type: 'Release'
           chain-network: ${{ inputs.chain-network }}
           target: 'daemon simplewallet'
-          static: 'true'
+          static: 'false'
           arch: 'aarch64'
           system-deps: true
 
