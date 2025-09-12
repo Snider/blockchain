@@ -42,7 +42,6 @@ jobs:
           chain-network: ${{ inputs.chain-network }}
           boost-root: ${{ steps.install-boost.outputs.BOOST_ROOT }}
           target: 'daemon simplewallet'
-          static: 'false'
           arch: 'x86'
           system-deps: true
 
